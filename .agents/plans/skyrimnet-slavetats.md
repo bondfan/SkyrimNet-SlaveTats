@@ -1,6 +1,6 @@
 # SkyrimNet - SlaveTats
 
-Status: design agreed where specified; implementation pending.
+Status: design agreed; implementation and API/performance checks pending.
 
 ## Scope
 
@@ -15,7 +15,18 @@ Status: design agreed where specified; implementation pending.
 
 ## Content packs
 
-- Map an installed SlaveTats tattoo to a stable identity, readable name, description, and one display region.
+Each enrichment entry has these fields:
+
+| Field | Type | Purpose |
+| --- | --- | --- |
+| Section | string | Existing SlaveTats section. |
+| Name | string | Existing SlaveTats tattoo name within that section. |
+| DisplayName | string | UI label. |
+| Category | string | One broad category for application selection, e.g. `bondage` or `slave`. |
+| Content | string | Short description for display prompts, including literal writing, symbols, or pictures, e.g. `The word “Slave”` or `A padlock surrounded by chains`. |
+| Position | enum string | One value from the fixed region list below; describes placement without controlling it. |
+
+- Use the pair `(Section, Name)` as the stable identity; no separate integer Id.
 - Keep the SlaveTats area separate from the display region: texture placement cannot be changed by selecting a region.
 - Regions: Face, Neck, Back, Ass, Pubic Area, All Over; left/right Arm, Lower Leg, Upper Leg, Hand, Foot.
 - Use All Over for multi-region tattoos. No partial-visibility model or region arrays.
@@ -41,8 +52,11 @@ Status: design agreed where specified; implementation pending.
 ## Display and UI
 
 - Display has its own enable setting.
-- Checked means the detected tattoo is treated as present and visible in prompts; unchecked hides its description without removing it.
-- No clothing, opacity, occlusion, or observer-specific visibility detection.
+- Checked means the detected tattoo is treated as present and visible in prompts; unchecked hides its description without removing it, except during the slot 32 visibility override.
+- When the player's slot 32 is empty, treat every detected enriched tattoo as visible. This is a deliberate nudity approximation regardless of equipment in other slots.
+- Apply this as a temporary override; preserve checkbox choices and restore their effect when slot 32 is occupied again.
+- Recheck slot 32 on save load and after equipment changes settle; coalesce equipment-event bursts and rebuild prompt output only when effective visibility changes. No per-frame checks.
+- No other clothing, opacity, occlusion, or observer-specific visibility detection.
 - Face is the only visible region by default. Configure defaults per region in SkyrimNet settings.
 - A configurable hotkey opens a Magelight list of the player's enriched applied tattoos with visibility checkboxes.
 - Publish current descriptions through a SkyrimNet prompt extension backed by cached state.
@@ -60,7 +74,27 @@ Status: design agreed where specified; implementation pending.
 - Capacity belongs to SlaveTats pools (Body, Face, Hands, Feet), not semantic regions. A full Body pool affects every candidate using it, including All Over.
 - Include unenriched tattoos and externally occupied overlay slots when determining capacity. This does not extend tattoo-description support beyond SlaveTats.
 - Recheck capacity during application because other mods can change it after prompt construction.
-- Exact candidate selection, categories, empty-result behavior, and repetition limits remain open.
+
+### Stripping
+
+- Strip the player before tattoo application and drop the removed worn items on the ground.
+- Remove worn clothing and armor, including boots, gloves, and helmets; keep jewelry and weapons equipped.
+- Honor `SexLabNoStrip` (`02F16E:SexLab.esm`) when available; do not add SexLab as a required dependency.
+- Leave protected or undroppable items untouched; do not bypass removal restrictions.
+- Select an eligible tattoo and check capacity before stripping so an empty selection does not cause unnecessary stripping.
+- Verify removal and dropping preserve the worn item instances, including enchantments and tempering, without dropping extra inventory copies.
+
+### Selection
+
+- Pack creators supply categories; no fixed category vocabulary.
+- Present available category/position pairs compactly, e.g. `slave: Face, Neck` and `bondage: Back, Left Arm`.
+- The LLM selects a category and position; the mod randomly selects one matching installed, enriched tattoo.
+- Exclude already-applied `(Section, Name)` pairs, including tattoos hidden in the display UI.
+- Apply one tattoo per action. Repeated applications of different tattoos are allowed without a cooldown or additional repetition limit.
+- If no eligible candidate remains, fail without substituting another category, position, or tattoo.
+- All Over identifies multi-region tattoos; it is not a wildcard for any position.
+- Before selection, instruct the NPC to stay vague about the design or writing, e.g. “I’ll mark you as you deserve it.” Do not promise specific wording or imagery.
+- After confirmed application, narrate the selected tattoo's actual Content and Position.
 
 ## Feature settings
 
@@ -85,8 +119,11 @@ Status: design agreed where specified; implementation pending.
 - Validate one enrichment pack against installed tattoos before building the full catalog.
 - Measure player tattoo enumeration and capacity queries; serve cached data to SkyrimNet callbacks.
 - Verify external application/removal, full pools, failed queries, slot reuse, visibility persistence, and rapid remove/reapply behavior.
+- Verify matching category/position choices, random selection, duplicate exclusion, empty-result failure without substitution, and repeated applications without a cooldown.
 - Verify both feature toggles independently, including subsequent prompt/action refresh.
 - Verify the player's tattoo summary appears when the conversation speaker is an NPC.
+- Measure slot 32 checks; verify equipment swaps, save loading, and temporary all-visible behavior preserve manual checkbox choices.
+- Verify stripping exclusions, ground drops, and worn-instance preservation, including multiple copies of the same base item.
 - Record MTF code reuse or inspiration and preserve applicable attribution and license notices.
 
 ## Sources inspected
@@ -96,6 +133,8 @@ Status: design agreed where specified; implementation pending.
 - Installed scripts: `G:/Modding/CSVO/mods/SlaveTatsNG/Source/Scripts/SlaveTats.psc` and `G:/Modding/CSVO/mods/SlaveTatsNG/Scripts/Source/SlaveTatsNG.psc`.
 - SkyrimNet 29 devkit: `../skyrimnet-devkit-beta29.1-rc2/CppAPI/PublicAPI.h` and `docs/modding/prompts-and-decorators.md` within that devkit.
 - Magelight: `G:/Modding/CSVO/mods/Magelight UI/Source/Scripts/Magelight.psc`.
+- Installed SexLab keyword: `SexLabNoStrip`, `02F16E:SexLab.esm`; stripping documentation in `G:/Modding/CSVO/mods/SexLab Framework PPLUS/Source/Scripts/SexLabFramework.psc`.
+- [SKSE worn-slot query declaration](https://github.com/ianpatt/skse64/blob/master/scripts/modified/Actor.psc).
 - [MTF source and integration documentation](https://github.com/levchimik/magic-tattoos-framework).
 
 Move this plan to `.agents/plans/completed` after implementation and verification.
