@@ -1,4 +1,4 @@
-# SkyrimNet - SlaveTats: implementation plan
+# SkyrimNet - SlaveTats: Implementation Plan
 
 Status: not started. This document schedules implementation; it does not authorize changes to the agreed behavior.
 
@@ -7,40 +7,41 @@ Specification: [skyrimnet-slavetats.md](skyrimnet-slavetats.md). Original idea: 
 ## Boundaries
 
 - Player wearers only; NPCs can initiate application. Keep actor parameters at integration boundaries without implementing NPC tracking.
-- Build one native SKSE plugin with SlaveTatsNG, SkyrimNet, and Magelight adapters. Keep catalog, reconciliation, visibility, and selection logic independent of game APIs.
-- Keep one build and verification setup. Confirm unresolved technical choices before adding dependencies or changing structure.
+- Use Papyrus with the existing SlaveTatsNG, SkyrimNet, Magelight, StorageUtil, and JContainers interfaces; no custom SKSE DLL or C++ toolchain.
+- Use a small ESL-flagged plugin for the controller quest and player alias. Keep catalog, reconciliation, visibility, selection, and UI responsibilities separate without adding a framework.
+- Compile scripts and verify behavior in-game. Papyrus development is exempt from unit-test requirements; do not create a standalone test runner.
+- Confirm unresolved technical choices before adding dependencies or changing structure.
 - Stage added files; do not commit. Use UTF-8 without BOM.
-- For later business-logic bug fixes, first reproduce the failure with a test, then fix it and observe the test pass.
 
-## 1. Verify integration contracts and toolchain
+## 1. Verify Integration Contracts and Toolchain
 
-- [ ] Confirm the active game runtime, SKSE, SkyrimNet 29 API, SlaveTatsNG interface, Magelight version, and their actual winning files through houseCARL.
-- [ ] Check MSVC, CMake/vcpkg, and CommonLibSSE-NG availability. Use the alandtse `ng` lineage; confirm build/dependency choices before scaffolding. Stop if required tooling is missing.
-- [ ] Read the current native-plugin lifecycle, threading, and persistence references before writing native code.
-- [ ] Verify SlaveTatsNG interface acquisition, initialization order, version checks, and each selected function's result convention. The shipped header's boolean annotations are not sufficient proof of runtime behavior.
-- [ ] Establish how native queries allocate, retain, read, and release JContainers results. Identify any additional required interface rather than guessing handle ownership.
-- [ ] Verify applied-tattoo enumeration, catalog lookup, pool capacity, external-slot accounting, and application without replacing existing tattoos. The shipped header marks several query methods as implementation details.
-- [ ] Locate Magelight's supported integration SDK and verify view creation, page callbacks, hotkeys, readiness, and reload handling. Do not assume the Papyrus interface is also the native interface.
-- [ ] Verify SkyrimNet action callback threading and completion semantics, native decorators, settings-change notifications, prompt placement, and cache refresh.
-- [ ] Confirm that the player's summary and compact application choices can reach NPC conversations without relying on the Papyrus nearby-actor decorator path.
-- [ ] Identify an engine-supported way to drop the exact worn item instance with its enchantment and tempering. Verify removal restrictions and exclusion detection.
+- [ ] Confirm the active game runtime, SKSE, SkyrimNet 29, SlaveTatsNG, Magelight, PapyrusUtil, JContainers, and their winning script files through houseCARL.
+- [ ] Confirm Papyrus compiler availability and source imports. Compile through houseCARL; stop if required tooling or declarations are missing.
+- [ ] Read the Papyrus reference and winning source declarations before authoring calls or callbacks.
+- [ ] Verify SlaveTatsNG's native Papyrus query/application functions, dependency initialization, and each selected function's result convention.
+- [ ] Establish how scripts allocate, retain, read, and release JContainers query results and runtime caches.
+- [ ] Verify applied-tattoo enumeration, catalog lookup, pool capacity, external-slot accounting, and application without replacing existing tattoos.
+- [ ] Verify Magelight's Papyrus view creation, page callbacks, hotkeys, readiness, focus, and reload behavior.
+- [ ] Verify SkyrimNet's Papyrus action callbacks and completion semantics, configuration getters/change notifications, prompt placement, and the built-in `papyrus_util` reader.
+- [ ] Confirm that prepared player summaries and compact application choices reach NPC conversations without a custom Papyrus decorator or tattoo scan during rendering.
+- [ ] Verify unequip-and-drop, removal restrictions, exclusion detection, and the accepted duplicate-instance behavior. Exact worn-copy selection is not a blocker.
 - [ ] Record findings and supported versions under `.agents/notes`; record unresolved blockers before proceeding with the affected feature.
 
 Exit: each integration has a documented usable route. Ask before substituting another API, dependency, or verification approach when a required route is blocked.
 
-## 2. Establish the native project
+## 2. Establish the Papyrus Controller
 
-- [ ] Add the confirmed build configuration, dependency references, plugin entry point, logging, and the project's verification setup.
-- [ ] Build the minimal DLL before adding feature logic. Package a loadable development artifact and verify its own load message in-game.
-- [ ] Add adapter boundaries for SlaveTatsNG, SkyrimNet, Magelight, and equipment operations; keep game objects out of the core data model.
-- [ ] Implement readiness checks and save-load/new-game reset handling. Missing or incompatible APIs must not trigger invalid calls.
-- [ ] Define a save-session generation so queued work and cached data from a previous save cannot affect the next loaded save.
-- [ ] Marshal engine operations to the required thread. Framework callbacks read immutable snapshots; release local locks before calling another plugin.
-- [ ] Schedule periodic work with a paced mechanism; never repeatedly enqueue a task into its own draining queue.
+- [ ] Create the ESL-flagged controller quest, player alias, startup bookkeeping, and required SEQ through houseCARL after schema lookup.
+- [ ] Add minimal startup/player-load scripts and logging. Compile and verify initialization in-game before adding feature logic.
+- [ ] Add script helpers for SlaveTatsNG, SkyrimNet, Magelight, equipment, and namespaced StorageUtil access.
+- [ ] Implement dependency readiness checks and save-load/new-game initialization. Missing or incompatible APIs must not trigger invalid calls.
+- [ ] Re-register session-only callbacks on loading and invalidate transient caches and stale pending work.
+- [ ] Guard overlapping refresh/application work and publish only completed snapshots; do not assume separate Papyrus callbacks cannot overlap.
+- [ ] Use single-update scheduling for periodic refresh and deferred equipment checks; no per-frame polling or permanent busy loops.
 
-Exit: the DLL builds and loads, readiness failures are logged, and save transitions clear transient work.
+Exit: scripts compile, the quest initializes on a new and existing save, readiness failures are logged, and loading reinitializes transient work.
 
-## 3. Implement enrichment loading
+## 3. Implement Enrichment Loading
 
 - [ ] Confirm pack serialization and discovery location, then document them with one complete example pack.
 - [ ] Implement the six agreed fields: Section, Name, DisplayName, Category, Content, Position. The source identity is `(Section, Name)`; there is no integer Id.
@@ -48,90 +49,96 @@ Exit: the DLL builds and loads, readiness failures are logged, and save transiti
 - [ ] Resolve entries against the installed SlaveTats catalog and obtain the underlying Body/Face/Hands/Feet pool from SlaveTats metadata.
 - [ ] Detect duplicate identities and conflicting mappings; report the source files without silently choosing a winner.
 - [ ] Build indexes by identity and category/position. Unenriched tattoos never become UI, prompt, or application entries.
-- [ ] Cover malformed entries, missing source tattoos, duplicate identities, All Over, and Content containing quotes or symbols in core tests.
+- [ ] Verify malformed entries, missing source tattoos, duplicate identities, All Over, and Content containing quotes or symbols using sample packs and loader diagnostics.
 
 Exit: a small real pack loads against installed tattoos, and invalid mappings produce actionable diagnostics.
 
-## 4. Implement player reconciliation and persistence
+## 4. Implement Player Reconciliation and Persistence
 
-- [ ] Query applied tattoos periodically, distinguish failure from an empty successful result, and copy results into owned snapshots.
+- [ ] Query applied tattoos periodically through SlaveTatsNG's native Papyrus functions; distinguish failure from an empty successful result and retain a completed runtime snapshot.
 - [ ] Reconcile enriched identities: add new entries using current defaults, preserve retained choices, and delete confirmed removals.
 - [ ] Preserve the agreed rapid remove/reapply behavior: changes not observed between polls may retain the previous choice.
-- [ ] Persist saved checkbox choices in the SKSE co-save using a versioned record and a nonconflicting serialization ID. Rebuild transient caches after loading.
+- [ ] Persist every known enriched identity and its saved visibility in namespaced StorageUtil state on the player, including hidden/defaulted choices. Confirm its versioned encoding before implementation.
+- [ ] Preserve the distinction between a hidden tattoo and an unseen identity; StorageUtil integer zero removes a key.
+- [ ] Rebuild active tattoo snapshots, capacity, and enrichment indexes after loading. Do not persist a second complete tattoo database or trust restored runtime handles without revalidation.
+- [ ] Clear only this mod's StorageUtil keys when cleaning up state.
 - [ ] Prevent a new default setting from rewriting choices on existing tattoos.
 - [ ] Keep complete pool-occupancy information separate from the enriched display list; unenriched tattoos still consume slots.
-- [ ] Cover query failure, repeated identical snapshots, removal/reapplication, slot reuse, default changes, and save-state restoration in core tests.
+- [ ] Verify query failure, repeated identical snapshots, removal/reapplication, slot reuse, changed defaults, and restoration of visible and hidden entries from older saves in-game.
 
 Exit: changes made through SlaveTats or another mod reconcile correctly; loading an older save restores its choices without leaking later state.
 
-## 5. Implement visibility and SkyrimNet Display
+## 5. Implement Visibility and SkyrimNet Display
 
 - [ ] Compute effective visibility as `slot32Empty || savedVisible` for each detected enriched tattoo, gated by Display being enabled.
 - [ ] Check slot 32 on load and after equipment changes settle. Coalesce event bursts; do not poll equipment every frame.
 - [ ] Preserve saved choices throughout the temporary all-visible override. Default Face visibility applies only to newly detected tattoos.
-- [ ] Publish cached current descriptions through the verified SkyrimNet prompt route. Treat Content as descriptive data and serialize/escape it correctly.
+- [ ] Publish each complete visible-tattoo summary to one namespaced StorageUtil string on the player. Replace it only when output changes; treat Content as descriptive data and serialize/escape it correctly.
+- [ ] Read the summary through SkyrimNet's built-in `papyrus_util` reader. Keep scans and custom Papyrus decorator calls out of the summary-rendering path.
+- [ ] After loading, rebuild the summary before treating it as current. Gate output on feature settings and readiness so serialized stale text is not exposed.
 - [ ] Include only the player's summary, and avoid repeating it once per NPC bio in the same prompt.
 - [ ] Rebuild output when effective content changes; verify SkyrimNet's own caches do not retain removed or newly hidden tattoos.
 - [ ] Add the agreed default-region settings and independent Apply/Display toggles using SkyrimNet's supported plugin-settings schema.
 - [ ] Stop recurring tattoo queries when both features are disabled. Apply-only mode may retain the queries it needs for selection and capacity.
-- [ ] Cover the visibility formula, dressed/nude transitions, changed defaults, and disabled Display in core tests.
+- [ ] Verify the visibility formula, dressed/nude transitions, changed defaults, disabled Display, and prompt freshness in-game.
 
 Exit: an NPC conversation sees the player's current visible tattoos; dressing restores manual choices, and disabling Display removes its contribution.
 
-## 6. Implement the Magelight screen
+## 6. Implement the Magelight Screen
 
 - [ ] Add a player-only list of enriched applied tattoos, showing DisplayName, Position, and the saved visibility checkbox.
 - [ ] Show when the slot 32 override makes every tattoo visible, so unchecked saved choices are not presented as currently hidden.
 - [ ] Route checkbox changes to saved state and refresh the cached prompt summary.
 - [ ] Add the configurable hotkey and handle opening, closing, focus refusal, page reload, save loading, and empty lists.
-- [ ] Keep all UI assets local. Use the supported Magelight callbacks; no additional web framework is required by this plan.
+- [ ] Keep all UI assets local and connect them through Magelight's Papyrus page callbacks; no additional web framework is required by this plan.
 
 Exit: keyboard interaction works in-game, choices survive reopening and save loading, and the UI performs no tattoo scans while rendering.
 
-## 7. Implement candidate selection and the SkyrimNet action
+## 7. Implement Candidate Selection and the SkyrimNet Action
 
 - [ ] Produce compact available pairs, e.g. `slave: Face, Neck`, from installed enriched candidates not already applied.
 - [ ] Include cached capacity filtering only after verifying its correctness and cost. Never infer free slots from enriched-tattoo counts alone.
-- [ ] Expose pairs through the verified prompt route; do not assume action parameter schemas can be changed dynamically.
-- [ ] Register an action taking Category and Position, with the player fixed as the recipient. Eligibility respects Apply and dependency readiness.
-- [ ] Instruct NPCs to stay vague before selection, e.g. “I’ll mark you as you deserve it.” All Over remains a concrete Position, not a wildcard.
+- [ ] Publish completed compact choices to a namespaced StorageUtil string for the action prompt to read through `papyrus_util`; gate stale choices after loading. Do not assume action parameter schemas can be changed dynamically.
+- [ ] Register a Papyrus-backed action taking Category and Position, with the player fixed as the recipient. Eligibility respects Apply and dependency readiness.
+- [ ] Instruct NPCs to stay vague before selection, e.g. "I’ll mark you as you deserve it." All Over remains a concrete Position, not a wildcard.
 - [ ] Validate the requested pair, refresh relevant state, exclude duplicates including hidden tattoos, and randomly choose one candidate.
 - [ ] Return failure without substitution when no candidate remains. Apply one tattoo per action; add no cooldown or repetition limit.
 - [ ] Serialize overlapping application requests so concurrent requests cannot choose the same unapplied tattoo. This is an in-progress guard, not a cooldown.
-- [ ] Cover matching, duplicate exclusion, All Over, invalid/empty requests, and random selection using an injectable random source.
+- [ ] Verify matching, duplicate exclusion, All Over, invalid/empty requests, and random selection against a small known candidate set in-game.
 
 Exit: the LLM receives compact choices, selection follows the agreed rules, and requests cannot bypass validation.
 
-## 8. Add stripping, application, and confirmed outcomes
+## 8. Add Stripping, Application, and Confirmed Outcomes
 
 - [ ] Preflight selection, dependency readiness, and capacity before changing equipment.
-- [ ] Snapshot eligible worn clothing/armor instances once, including boots, gloves, and helmets. Keep jewelry and weapons; deduplicate items occupying multiple slots.
+- [ ] Snapshot eligible worn clothing/armor forms once, including boots, gloves, and helmets. Keep jewelry and weapons; deduplicate items occupying multiple slots.
 - [ ] Resolve SexLabNoStrip optionally from `02F16E:SexLab.esm`. Leave marked, protected, or undroppable items untouched without requiring SexLab.
-- [ ] Unequip and drop only the selected worn instances through the verified engine route. Do not recreate items from base forms or drop spare inventory copies.
+- [ ] Unequip each eligible form, then drop one instance through the script API. Any copy of that base item is acceptable; do not recreate items or drop all inventory copies.
 - [ ] Recheck relevant state after stripping, then apply the selected tattoo without overwriting occupied or locked slots.
 - [ ] Read back the applied identity before reporting success. Distinguish work being queued from application being completed in the SkyrimNet callback contract.
 - [ ] Update cached tattoo/visibility state after completion and emit narration using the actual Content and Position.
 - [ ] On failure, report the actual outcome without successful-tattoo narration. Dropped clothing is a separate completed side effect; do not imply it was restored.
 - [ ] Cancel stale work across save transitions and release the in-progress guard on every completion/failure path.
 
-Exit: one action strips eligible items, drops their original instances, applies one tattoo, and narrates only a confirmed result.
+Exit: one action unequips eligible clothing, drops one instance per eligible form, applies one tattoo, and narrates only a confirmed result.
 
-## 9. Verify performance and package
+## 9. Verify Performance and Package
 
-- [ ] Run the project's build and meaningful core tests. Do not create a parallel runner when the configured setup is blocked.
+- [ ] Compile all scripts through houseCARL and complete the in-game checks.
 - [ ] Verify external application/removal, failed queries, full pools, externally occupied slots, locked tattoos, and rapid remove/reapply in-game.
-- [ ] Verify stripping with duplicate base items, enchanted/tempered items, multi-slot armor, NoStrip, jewelry, weapons, and protected items.
+- [ ] Verify stripping with duplicate base items, enchanted/tempered items, multi-slot armor, NoStrip, jewelry, weapons, and protected items. Inspect dropped copies and pickup behavior without requiring the previously worn instance.
 - [ ] Verify both feature toggles independently, an empty enrichment catalog, UI reopening, equipment swaps, older saves, and new-game reset.
 - [ ] Verify late application failure produces no success narration and leaves cached state consistent with actual game state.
-- [ ] Measure native enumeration, capacity queries, slot 32 checks, cache rebuilding, and game-thread time with representative tattoo/overlay counts. Select the polling interval from those measurements.
+- [ ] Measure complete Papyrus refresh latency, native query/capacity calls, slot 32 checks, and cache rebuilding with representative tattoo/overlay counts. Select the polling interval from those measurements.
 - [ ] Verify prompt rendering reads cached data, equipment-event bursts coalesce, and both features disabled produce no recurring tattoo queries.
-- [ ] Package the DLL, required content files, Magelight assets, one verified enrichment pack, and dependency/version instructions as an MO2-ready archive.
-- [ ] Document Apply/Display settings, the MTF Display incompatibility, dropped-clothing behavior, and pack authoring. Preserve applicable license notices and record MTF reuse/inspiration.
+- [ ] Package the ESL-flagged plugin, required SEQ, compiled scripts, Magelight assets, SkyrimNet content/settings, one verified enrichment pack, and dependency/version instructions as an MO2-ready archive.
+- [ ] Document Apply/Display settings, the MTF Display incompatibility, StorageUtil persistence, and pack authoring. Preserve applicable license notices and record MTF reuse/inspiration.
+- [ ] State in the README that stripping unequips clothing and drops one copy of each base item; when duplicates exist, the dropped copy may have different enchantment or tempering from the worn copy.
 - [ ] Verify packaged contents and deployed winners through houseCARL after installation; distinguish build, deployment, load, and gameplay results.
 - [ ] Move this implementation plan to `.agents/plans/completed` only after its required checks pass. Keep unresolved runtime checks explicit.
 
-## Evidence and stop conditions
+## Evidence and Stop Conditions
 
 Use the specification's source list and the local SkyrimNet 29 devkit. Current static inspection found SlaveTatsNG 0.8.1 and Magelight 1.7.1; these are investigation baselines, not established minimum supported versions.
 
-Stop the affected phase and ask if native query ownership, exact-instance dropping, action completion, or Magelight integration cannot satisfy the specification. Do not silently weaken those requirements, introduce another framework, or claim runtime verification from a successful build.
+Stop the affected phase and ask if query-result lifetimes, StorageUtil access, action completion, or Magelight's Papyrus interface cannot satisfy the specification. Selecting a different duplicate item instance after unequipping is accepted and does not justify adding a DLL. Do not introduce another framework or claim runtime verification from successful compilation.

@@ -8,12 +8,13 @@ Status: design agreed; implementation and API/performance checks pending.
 - Player is the only tattoo wearer managed by Apply, Display, and the UI.
 - NPCs may apply tattoos to the player through SkyrimNet actions.
 - No crosshair targeting or NPC tattoo tracking.
-- Requirements: SkyrimNet 29, SlaveTats, SlaveTatsNG, Magelight, and enrichment content packs.
-- Use SlaveTatsNG's native API; verify supported interface versions and result semantics before implementation.
+- Requirements: SkyrimNet 29, SlaveTats, SlaveTatsNG, Magelight, PapyrusUtil, JContainers, and enrichment content packs.
+- Implement the controller in Papyrus using the existing SlaveTatsNG, SkyrimNet, and Magelight script interfaces; no custom SKSE DLL.
+- Use SlaveTatsNG's native Papyrus functions; verify availability and result semantics before implementation.
 - Only tattoos represented in SlaveTats state are in scope, including those applied or removed by other mods.
 - Ignore unenriched tattoos in application choices, the UI, and prompt descriptions. They still consume overlay capacity.
 
-## Content packs
+## Content Packs
 
 Each enrichment entry has these fields:
 
@@ -34,7 +35,7 @@ Each enrichment entry has these fields:
 - Enrichment describes the existing texture; it does not generate lettering or imagery.
 - Resolve duplicate or conflicting pack mappings explicitly during validation.
 
-## Detection and state
+## Detection and State
 
 - Periodically query the player's applied tattoos and compare with the previous successful snapshot.
 - Add newly detected enriched tattoos using the current visibility defaults.
@@ -44,10 +45,18 @@ Each enrichment entry has these fields:
 - Removal and reapplication between polls may remain undetected and retain the previous state; this is acceptable.
 - Default-setting changes affect new tattoos only.
 - Preserve state on query failure; failure is not an empty tattoo list.
-- Save visibility choices with the save game; loading an older save must restore its choices and rebuild transient caches.
 - Match tattoos by stable metadata rather than overlay slot alone; slots can be reused.
-- Cache prompt output and rebuild it when relevant state changes. Do not query SlaveTats while rendering prompts.
 - Choose the polling interval after measuring native queries. No world-wide actor scans.
+
+## Storage
+
+- Persist every known enriched identity and its saved visibility, including hidden/defaulted choices, in namespaced StorageUtil state on the player.
+- Loading an older save restores its choices. Preserve the distinction between a hidden tattoo and an identity never detected; StorageUtil integer zero removes the key.
+- Keep detected-tattoo snapshots, pool capacity, and enrichment indexes as runtime caches rebuilt after loading. SlaveTats remains authoritative for applied tattoos.
+- Publish complete visible-tattoo summaries and compact application choices as namespaced StorageUtil strings when their contents change.
+- Read prepared prompt data through SkyrimNet's built-in `papyrus_util` reader; do not scan tattoos or call a custom Papyrus decorator to fetch the summary during prompt rendering.
+- Rebuild published data after loading before treating it as current; feature settings and readiness must suppress stale output.
+- Keep defaults, feature toggles, and the hotkey in SkyrimNet plugin settings. Clear only this mod's StorageUtil keys.
 
 ## Display and UI
 
@@ -66,7 +75,7 @@ Each enrichment entry has these fields:
 ## Apply
 
 - Apply has its own enable setting, independent of Display.
-- Apply only installed, enriched tattoos to the player through the native API.
+- Apply only installed, enriched tattoos to the player through SlaveTatsNG's native Papyrus functions.
 - Respect occupied and locked slots. Report failure without narrating successful application.
 - Confirm the resulting applied state before emitting the SkyrimNet success event.
 - Describe the applied texture using enrichment; do not assume its name is literal writing.
@@ -77,12 +86,12 @@ Each enrichment entry has these fields:
 
 ### Stripping
 
-- Strip the player before tattoo application and drop the removed worn items on the ground.
+- Strip the player before tattoo application by unequipping eligible items and dropping one instance of each item form on the ground.
 - Remove worn clothing and armor, including boots, gloves, and helmets; keep jewelry and weapons equipped.
 - Honor `SexLabNoStrip` (`02F16E:SexLab.esm`) when available; do not add SexLab as a required dependency.
 - Leave protected or undroppable items untouched; do not bypass removal restrictions.
 - Select an eligible tattoo and check capacity before stripping so an empty selection does not cause unnecessary stripping.
-- Verify removal and dropping preserve the worn item instances, including enchantments and tempering, without dropping extra inventory copies.
+- With multiple copies of a base item, dropping any instance after unequipping is acceptable; document in the README that the dropped copy may differ from the worn copy, including its enchantment or tempering.
 
 ### Selection
 
@@ -93,46 +102,48 @@ Each enrichment entry has these fields:
 - Apply one tattoo per action. Repeated applications of different tattoos are allowed without a cooldown or additional repetition limit.
 - If no eligible candidate remains, fail without substituting another category, position, or tattoo.
 - All Over identifies multi-region tattoos; it is not a wildcard for any position.
-- Before selection, instruct the NPC to stay vague about the design or writing, e.g. “I’ll mark you as you deserve it.” Do not promise specific wording or imagery.
+- Before selection, instruct the NPC to stay vague about the design or writing, e.g. "I’ll mark you as you deserve it." Do not promise specific wording or imagery.
 - After confirmed application, narrate the selected tattoo's actual Content and Position.
 
-## Feature settings
+## Feature Settings
 
 - Apply and Display can each be disabled for partial compatibility with other integrations.
 - Disabling Apply removes its available actions; disabling Display removes its prompt contribution.
 - When both are disabled, stop periodic tattoo queries.
 - Apply may still need capacity queries when Display is disabled.
 
-## Future NPC extension
+## Future NPC Extension
 
 - Keep tattoo queries and application operations actor-parameterized; pass the player in this version.
 - Keep content-pack metadata independent of the wearer.
-- Isolate persistence and prompt output so an actor key can be added later.
+- Keep StorageUtil state and query helpers keyed to the wearer; use only the player in this version.
 - Do not implement actor registries, NPC polling, crosshair targeting, NPC UI, or NPC state storage now.
-- Native APIs already accept an actor; the additional cost would come from tracking actors, handling their lifecycle, persistence, prompt routing, and testing.
+- The script APIs already accept an actor; the additional cost would come from tracking actors, handling their lifecycle, persistence, prompt routing, and verification.
 - NPC polling cost grows with actors and overlays examined; no runtime measurements exist yet.
-- The devkit's speaker/target restriction documents Papyrus decorators. Its native decorator API accepts an actor and does not document the same restriction; do not treat the Papyrus warning as proof that native NPC support is blocked.
+- The current prompt route reads prepared player data through `papyrus_util`, avoiding the custom Papyrus decorator speaker/target restriction. Reassess prompt routing before adding NPC wearers.
 
-## Implementation checks
+## Implementation Checks
 
-- Verify native interface availability, query ownership/lifetimes, thread requirements, and boolean result conventions. The shipped header marks several query helpers as implementation details.
+- Verify script-interface availability, JContainers handle ownership/lifetimes, callback behavior, and boolean result conventions.
 - Validate one enrichment pack against installed tattoos before building the full catalog.
-- Measure player tattoo enumeration and capacity queries; serve cached data to SkyrimNet callbacks.
+- Measure player tattoo enumeration and capacity queries; publish completed prompt data through StorageUtil.
 - Verify external application/removal, full pools, failed queries, slot reuse, visibility persistence, and rapid remove/reapply behavior.
 - Verify matching category/position choices, random selection, duplicate exclusion, empty-result failure without substitution, and repeated applications without a cooldown.
 - Verify both feature toggles independently, including subsequent prompt/action refresh.
 - Verify the player's tattoo summary appears when the conversation speaker is an NPC.
 - Measure slot 32 checks; verify equipment swaps, save loading, and temporary all-visible behavior preserve manual checkbox choices.
-- Verify stripping exclusions, ground drops, and worn-instance preservation, including multiple copies of the same base item.
+- Verify stripping exclusions and one-instance ground drops, including duplicate base items and pickup of enchanted/tempered copies. Exact worn-copy selection is not required.
+- Compile Papyrus scripts and verify behavior in-game; Papyrus development has no unit-test requirement.
 - Record MTF code reuse or inspiration and preserve applicable attribution and license notices.
 
-## Sources inspected
+## Sources Inspected
 
 - Original idea: `SkyrimNet - Tats.md`.
 - Installed SlaveTatsNG: `G:/Modding/CSVO/mods/SlaveTatsNG/SKSE/Plugins/SlaveTatsNG/SlaveTatsNG_Interface.h`.
 - Installed scripts: `G:/Modding/CSVO/mods/SlaveTatsNG/Source/Scripts/SlaveTats.psc` and `G:/Modding/CSVO/mods/SlaveTatsNG/Scripts/Source/SlaveTatsNG.psc`.
-- SkyrimNet 29 devkit: `../skyrimnet-devkit-beta29.1-rc2/CppAPI/PublicAPI.h` and `docs/modding/prompts-and-decorators.md` within that devkit.
+- SkyrimNet script API: `G:/Modding/CSVO/mods/skyrimnet/Source/Scripts/SkyrimNetApi.psc`; prompt/content documentation in `../skyrimnet-devkit-beta29.1-rc2/docs/modding/`.
 - Magelight: `G:/Modding/CSVO/mods/Magelight UI/Source/Scripts/Magelight.psc`.
+- StorageUtil: `G:/Modding/CSVO/mods/PapyrusUtil SE - Modders Scripting Utility Functions/Scripts/Source/StorageUtil.psc`.
 - Installed SexLab keyword: `SexLabNoStrip`, `02F16E:SexLab.esm`; stripping documentation in `G:/Modding/CSVO/mods/SexLab Framework PPLUS/Source/Scripts/SexLabFramework.psc`.
 - [SKSE worn-slot query declaration](https://github.com/ianpatt/skse64/blob/master/scripts/modified/Actor.psc).
 - [MTF source and integration documentation](https://github.com/levchimik/magic-tattoos-framework).
