@@ -43,7 +43,7 @@ Exit: scripts compile, the quest initializes on a new and existing save, readine
 
 ## 3. Implement Enrichment Loading
 
-- [ ] Confirm pack serialization and discovery location, then document them with one complete example pack.
+- [x] Confirm plain JSON arrays under `Data/SKSE/Plugins/SkyrimNet-SlaveTats/Packs/`; document the format in `docs/enrichment-packs.md`.
 - [ ] Implement the six agreed fields: Section, Name, DisplayName, Category, Content, Position. The source identity is `(Section, Name)`; there is no integer Id.
 - [ ] Validate field types, required values, and the fixed Position vocabulary. Categories remain supplied by pack creators.
 - [ ] Resolve entries against the installed SlaveTats catalog and obtain the underlying Body/Face/Hands/Feet pool from SlaveTats metadata.
@@ -59,7 +59,7 @@ Exit: a small real pack loads against installed tattoos, and invalid mappings pr
 - [ ] Reconcile enriched identities: add new entries using current defaults, preserve retained choices, and delete confirmed removals.
 - [ ] Preserve the agreed rapid remove/reapply behavior: changes not observed between polls may retain the previous choice.
 - [ ] Store one namespaced StorageUtil integer per enriched `(Section, Name)` identity on the player: missing = newly detected, `1` = hidden, `2` = visible. Persist defaulted choices and unset keys after confirmed removal.
-- [ ] Use an unambiguous identity-to-key encoding. No JSON visibility-state document or version field is required.
+- [x] Use length-prefixed keys: `SNT_Visibility:<section length>:<section>:<name>`. `SNT_Storage` compiles; runtime verification remains pending.
 - [ ] Rebuild active tattoo snapshots, capacity, and enrichment indexes after loading. Do not persist a second complete tattoo database or trust restored runtime handles without revalidation.
 - [ ] Clear only this mod's StorageUtil keys when cleaning up state.
 - [ ] Prevent a new default setting from rewriting choices on existing tattoos.

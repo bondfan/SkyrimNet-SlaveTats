@@ -16,6 +16,8 @@ Status: design agreed; implementation and API/performance checks pending.
 
 ## Content Packs
 
+Use plain JSON arrays under `Data/SKSE/Plugins/SkyrimNet-SlaveTats/Packs/`; see [pack format](../../docs/enrichment-packs.md).
+
 Each enrichment entry has these fields:
 
 | Field | Type | Purpose |
