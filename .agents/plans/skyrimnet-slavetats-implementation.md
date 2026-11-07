@@ -1,6 +1,6 @@
 # SkyrimNet - SlaveTats: Implementation Plan
 
-Status: not started. This document schedules implementation; it does not authorize changes to the agreed behavior.
+Status: phase 1 started; initial controller script compiles with the approved vanilla imports. API and runtime checks remain pending; see [implementation-start.md](../notes/implementation-start.md).
 
 Specification: [skyrimnet-slavetats.md](skyrimnet-slavetats.md). Original idea: [SkyrimNet - Tats.md](../../SkyrimNet%20-%20Tats.md).
 
@@ -16,7 +16,7 @@ Specification: [skyrimnet-slavetats.md](skyrimnet-slavetats.md). Original idea: 
 ## 1. Verify Integration Contracts and Toolchain
 
 - [ ] Confirm the active game runtime, SKSE, SkyrimNet 29, SlaveTatsNG, Magelight, PapyrusUtil, JContainers, and their winning script files through houseCARL.
-- [ ] Confirm Papyrus compiler availability and source imports. Compile through houseCARL; stop if required tooling or declarations are missing.
+- [x] Confirm Papyrus compiler availability and source imports. Initial controller compiled through houseCARL using saved import set `SkyrimNet-SlaveTats`.
 - [ ] Read the Papyrus reference and winning source declarations before authoring calls or callbacks.
 - [ ] Verify SlaveTatsNG's native Papyrus query/application functions, dependency initialization, and each selected function's result convention.
 - [ ] Establish how scripts allocate, retain, read, and release JContainers query results and runtime caches.
@@ -58,8 +58,8 @@ Exit: a small real pack loads against installed tattoos, and invalid mappings pr
 - [ ] Query applied tattoos periodically through SlaveTatsNG's native Papyrus functions; distinguish failure from an empty successful result and retain a completed runtime snapshot.
 - [ ] Reconcile enriched identities: add new entries using current defaults, preserve retained choices, and delete confirmed removals.
 - [ ] Preserve the agreed rapid remove/reapply behavior: changes not observed between polls may retain the previous choice.
-- [ ] Persist every known enriched identity and its saved visibility in namespaced StorageUtil state on the player, including hidden/defaulted choices. Confirm its versioned encoding before implementation.
-- [ ] Preserve the distinction between a hidden tattoo and an unseen identity; StorageUtil integer zero removes a key.
+- [ ] Store one namespaced StorageUtil integer per enriched `(Section, Name)` identity on the player: missing = newly detected, `1` = hidden, `2` = visible. Persist defaulted choices and unset keys after confirmed removal.
+- [ ] Use an unambiguous identity-to-key encoding. No JSON visibility-state document or version field is required.
 - [ ] Rebuild active tattoo snapshots, capacity, and enrichment indexes after loading. Do not persist a second complete tattoo database or trust restored runtime handles without revalidation.
 - [ ] Clear only this mod's StorageUtil keys when cleaning up state.
 - [ ] Prevent a new default setting from rewriting choices on existing tattoos.

@@ -50,8 +50,8 @@ Each enrichment entry has these fields:
 
 ## Storage
 
-- Persist every known enriched identity and its saved visibility, including hidden/defaulted choices, in namespaced StorageUtil state on the player.
-- Loading an older save restores its choices. Preserve the distinction between a hidden tattoo and an identity never detected; StorageUtil integer zero removes the key.
+- Persist one namespaced StorageUtil integer per enriched tattoo identity on the player: missing = newly detected, `1` = hidden, `2` = visible. Store defaulted choices too; unset the key after confirmed removal.
+- Loading an older save restores its choices. No JSON visibility-state document or version field is needed.
 - Keep detected-tattoo snapshots, pool capacity, and enrichment indexes as runtime caches rebuilt after loading. SlaveTats remains authoritative for applied tattoos.
 - Publish complete visible-tattoo summaries and compact application choices as namespaced StorageUtil strings when their contents change.
 - Read prepared prompt data through SkyrimNet's built-in `papyrus_util` reader; do not scan tattoos or call a custom Papyrus decorator to fetch the summary during prompt rendering.
