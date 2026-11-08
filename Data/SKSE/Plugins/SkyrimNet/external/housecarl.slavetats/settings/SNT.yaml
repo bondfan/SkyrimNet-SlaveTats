@@ -1,0 +1,141 @@
+plugin:
+  name: "SNT"
+  version: "0.1.0"
+  description: "Player tattoo visibility and application."
+
+schema:
+  fields:
+    - name: "Display tattoos"
+      path: "features.display"
+      type: "bool"
+      defaultValue: true
+      category: "Features"
+      supportsOverride: false
+
+    - name: "Apply tattoos"
+      path: "features.apply"
+      type: "bool"
+      defaultValue: true
+      category: "Features"
+      supportsOverride: false
+
+    - name: "Face"
+      path: "visibility.Face"
+      type: "bool"
+      defaultValue: true
+      category: "New tattoo visibility"
+      supportsOverride: false
+
+    - name: "Neck"
+      path: "visibility.Neck"
+      type: "bool"
+      defaultValue: false
+      category: "New tattoo visibility"
+      supportsOverride: false
+
+    - name: "Back"
+      path: "visibility.Back"
+      type: "bool"
+      defaultValue: false
+      category: "New tattoo visibility"
+      supportsOverride: false
+
+    - name: "Ass"
+      path: "visibility.Ass"
+      type: "bool"
+      defaultValue: false
+      category: "New tattoo visibility"
+      supportsOverride: false
+
+    - name: "Pubic Area"
+      path: "visibility.Pubic Area"
+      type: "bool"
+      defaultValue: false
+      category: "New tattoo visibility"
+      supportsOverride: false
+
+    - name: "All Over"
+      path: "visibility.All Over"
+      type: "bool"
+      defaultValue: false
+      category: "New tattoo visibility"
+      supportsOverride: false
+
+    - name: "Left Arm"
+      path: "visibility.Left Arm"
+      type: "bool"
+      defaultValue: false
+      category: "New tattoo visibility"
+      supportsOverride: false
+
+    - name: "Right Arm"
+      path: "visibility.Right Arm"
+      type: "bool"
+      defaultValue: false
+      category: "New tattoo visibility"
+      supportsOverride: false
+
+    - name: "Left Lower Leg"
+      path: "visibility.Left Lower Leg"
+      type: "bool"
+      defaultValue: false
+      category: "New tattoo visibility"
+      supportsOverride: false
+
+    - name: "Right Lower Leg"
+      path: "visibility.Right Lower Leg"
+      type: "bool"
+      defaultValue: false
+      category: "New tattoo visibility"
+      supportsOverride: false
+
+    - name: "Left Upper Leg"
+      path: "visibility.Left Upper Leg"
+      type: "bool"
+      defaultValue: false
+      category: "New tattoo visibility"
+      supportsOverride: false
+
+    - name: "Right Upper Leg"
+      path: "visibility.Right Upper Leg"
+      type: "bool"
+      defaultValue: false
+      category: "New tattoo visibility"
+      supportsOverride: false
+
+    - name: "Left Hand"
+      path: "visibility.Left Hand"
+      type: "bool"
+      defaultValue: false
+      category: "New tattoo visibility"
+      supportsOverride: false
+
+    - name: "Right Hand"
+      path: "visibility.Right Hand"
+      type: "bool"
+      defaultValue: false
+      category: "New tattoo visibility"
+      supportsOverride: false
+
+    - name: "Left Foot"
+      path: "visibility.Left Foot"
+      type: "bool"
+      defaultValue: false
+      category: "New tattoo visibility"
+      supportsOverride: false
+
+    - name: "Right Foot"
+      path: "visibility.Right Foot"
+      type: "bool"
+      defaultValue: false
+      category: "New tattoo visibility"
+      supportsOverride: false
+    - name: "Visibility hotkey"
+      path: "ui.hotkey"
+      type: "hotkey"
+      defaultValue: 0
+      min: 0
+      max: 255
+      description: "Opens tattoo visibility. Supports F1–F12, numpad digits/operators, arrows, Home/End, Page Up/Down, Insert/Delete. Other keys leave it unbound."
+      category: "UI"
+      supportsOverride: false

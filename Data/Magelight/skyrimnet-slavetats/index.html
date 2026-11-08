@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>Tattoo visibility</title>
+<style>
+body { margin:0; background:#171b20; color:#eee; font:20px sans-serif; }
+main { padding:28px; } h1 { margin:0 0 16px; font-size:28px; }
+header { display:flex; justify-content:space-between; align-items:center; }
+button { padding:8px 16px; background:#343c46; color:white; border:1px solid #74808c; cursor:pointer; }
+#notice { color:#e9c879; min-height:28px; } #tattoos { max-height:450px; overflow:auto; }
+label { display:flex; gap:16px; padding:15px 4px; border-bottom:1px solid #3c4650; cursor:pointer; }
+input { width:24px; height:24px; } small { display:block; color:#b7c3ce; margin-top:5px; }
+</style>
+<main>
+<header><h1>Tattoo visibility</h1><button id="close">Close</button></header>
+<p id="notice"></p><div id="tattoos">Waiting for tattoo data…</div>
+</main>
+<script>
+window.setState = function(payload) {
+  var state = typeof payload === 'string' ? JSON.parse(payload) : payload;
+  document.getElementById('notice').textContent = state.nude ? 'All tattoos are visible while slot 32 is empty. Checkboxes retain your dressed choices.' : 'Checked tattoos appear in dialogue prompts.';
+  var list = document.getElementById('tattoos');
+  list.textContent = '';
+  var tattoos = state.tattoos || [];
+  if (!tattoos.length) list.textContent = 'No enriched tattoos detected.';
+  tattoos.forEach(function(tattoo) {
+    var label = document.createElement('label');
+    var input = document.createElement('input');
+    input.type = 'checkbox'; input.checked = tattoo.visibility === 2;
+    input.onchange = function() {
+      if (typeof window.snt_visibility === 'function') window.snt_visibility(JSON.stringify({identity:tattoo.identity,visibility:input.checked ? 2 : 1}));
+    };
+    var text = document.createElement('span'); text.textContent = tattoo.name;
+    var position = document.createElement('small'); position.textContent = tattoo.position;
+    text.appendChild(position); label.appendChild(input); label.appendChild(text); list.appendChild(label);
+  });
+};
+document.getElementById('close').onclick = function() {
+  if (typeof window.snt_close === 'function') window.snt_close('');
+};
+</script>
+</html>

@@ -1,0 +1,58 @@
+[
+  {
+    "Section": "Slave Marks",
+    "Name": "Slave (forehead)",
+    "DisplayName": "Slave (forehead)",
+    "Category": "slave",
+    "Content": "The word “Slave”",
+    "Position": "Face"
+  },
+  {
+    "Section": "Slave Marks",
+    "Name": "Slave (left cheek)",
+    "DisplayName": "Slave (left cheek)",
+    "Category": "slave",
+    "Content": "The word “Slave”",
+    "Position": "Face"
+  },
+  {
+    "Section": "Slave Marks",
+    "Name": "Slave (right cheek)",
+    "DisplayName": "Slave (right cheek)",
+    "Category": "slave",
+    "Content": "The word “Slave”",
+    "Position": "Face"
+  },
+  {
+    "Section": "Slave Marks",
+    "Name": "Slave (alt) (right cheek)",
+    "DisplayName": "Slave (alt) (right cheek)",
+    "Category": "slave",
+    "Content": "The word “Slave” in an alternate style",
+    "Position": "Face"
+  },
+  {
+    "Section": "Slave Marks",
+    "Name": "Slave (left hand)",
+    "DisplayName": "Slave (left hand)",
+    "Category": "slave",
+    "Content": "The word “Slave”",
+    "Position": "Left Hand"
+  },
+  {
+    "Section": "Slave Marks",
+    "Name": "Slave (right hand)",
+    "DisplayName": "Slave (right hand)",
+    "Category": "slave",
+    "Content": "The word “Slave”",
+    "Position": "Right Hand"
+  },
+  {
+    "Section": "Slave Marks",
+    "Name": "Slave (pubic)",
+    "DisplayName": "Slave (pubic)",
+    "Category": "slave",
+    "Content": "The word “Slave”",
+    "Position": "Pubic Area"
+  }
+]

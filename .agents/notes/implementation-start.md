@@ -12,3 +12,7 @@
 - Implemented and compiled `SNT_Storage`: length-prefixed visibility keys, integer reads/writes, and removal. Invalid wearer/identity inputs are rejected. No deployment or runtime read-back yet.
 - Added and compiled `SNT_SlaveTats`: retained applied-tattoo snapshots, section/name matching, and pool validation. Query failure returns zero; a successful empty query returns an array, preventing accidental removal on error.
 - Available-catalog queries are domain-scoped. Resolve non-default-domain tattoos before treating a missing default-domain match as an uninstalled tattoo; no catalog filtering was added yet.
+- Created `SNT_MainQuest` (`000800:SkyrimNet-SlaveTats.esp`), forced player alias 0, quest/alias script bindings, ESL flag, and SEQ through houseCARL. Read-back confirmed bindings after compaction; no IDs moved.
+- Startup and player-load scripts compile. Updated the saved import set to put installed SKSE declarations ahead of the approved vanilla baseline; this resolves shadowed Utility array declarations.
+- All five scripts, plugin, and SEQ are staged under Data and copied to `G:/Modding/CSVO/mods/houseCARL - SkyrimNet-SlaveTats`; artifact hashes match. MO2 reports the mod UNLISTED, so nothing is active yet.
+- Runtime gate: enable the mod/plugin, restart Skyrim, load a save, then save/reload and inspect `[SNT]` Papyrus log lines before adding feature logic, as required by phase 2.

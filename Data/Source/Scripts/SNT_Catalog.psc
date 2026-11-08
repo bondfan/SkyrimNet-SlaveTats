@@ -2,21 +2,16 @@ Scriptname SNT_Catalog Hidden
 
 ; Caller owns the retained result and must release it when replacing the catalog.
 Int Function Load() Global
-    Int packs = JValue.retain(JValue.readFromDirectory("Data/SKSE/Plugins/SkyrimNet-SlaveTats/Packs", ".json"))
-    If !JValue.isMap(packs)
-        JValue.release(packs)
-        Debug.Trace("[SNT] Could not read enrichment pack directory", 2)
-        Return 0
-    EndIf
+    String directory = "Data/SKSE/Plugins/SkyrimNet-SlaveTats/Packs"
+    String[] filenames = MiscUtil.FilesInFolder(directory, ".json")
     Int catalog = JValue.retain(JMap.object())
-    Int filenames = JValue.retain(JMap.allKeys(packs))
     Int fileIndex = 0
     Bool valid = True
-    While fileIndex < JArray.count(filenames) && valid
-        String filename = JArray.getStr(filenames, fileIndex)
-        Int entries = JMap.getObj(packs, filename)
+    While fileIndex < filenames.Length && valid
+        String filename = filenames[fileIndex]
+        Int entries = JValue.retain(JValue.readFromFile(directory + "/" + filename))
         If !JValue.isArray(entries)
-            Debug.Trace("[SNT] " + filename + ": root must be an array", 2)
+            Debug.Trace("[SNT] " + filename + ": invalid JSON or root is not an array", 2)
             valid = False
         Else
             Int entryIndex = 0
@@ -38,10 +33,9 @@ Int Function Load() Global
                 entryIndex += 1
             EndWhile
         EndIf
+        JValue.release(entries)
         fileIndex += 1
     EndWhile
-    JValue.release(filenames)
-    JValue.release(packs)
     If !valid
         Return JValue.release(catalog)
     EndIf

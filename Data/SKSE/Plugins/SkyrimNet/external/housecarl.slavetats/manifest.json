@@ -1,0 +1,15 @@
+{
+  "id": "housecarl.slavetats",
+  "type": "bundle",
+  "title": "SkyrimNet - SlaveTats",
+  "tagline": "Player tattoo awareness.",
+  "description": "Enriched player tattoos with manual visibility.",
+  "author": "housecarl",
+  "tags": [
+    "dialogue"
+  ],
+  "nsfw": true,
+  "icon": "settings",
+  "version": "0.1.0",
+  "min_skyrimnet_version": "0.29.0"
+}

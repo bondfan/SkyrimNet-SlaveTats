@@ -8,7 +8,7 @@ Status: design agreed; implementation and API/performance checks pending.
 - Player is the only tattoo wearer managed by Apply, Display, and the UI.
 - NPCs may apply tattoos to the player through SkyrimNet actions.
 - No crosshair targeting or NPC tattoo tracking.
-- Requirements: SkyrimNet 29, SlaveTats, SlaveTatsNG, Magelight, PapyrusUtil, JContainers, and enrichment content packs.
+- Requirements: SkyrimNet 29, SlaveTats, SlaveTatsNG, Magelight, PapyrusUtil, JContainers, powerofthree's Papyrus Extender, and enrichment content packs.
 - Implement the controller in Papyrus using the existing SlaveTatsNG, SkyrimNet, and Magelight script interfaces; no custom SKSE DLL.
 - Use SlaveTatsNG's native Papyrus functions; verify availability and result semantics before implementation.
 - Only tattoos represented in SlaveTats state are in scope, including those applied or removed by other mods.
@@ -70,6 +70,7 @@ Each enrichment entry has these fields:
 - No other clothing, opacity, occlusion, or observer-specific visibility detection.
 - Face is the only visible region by default. Configure defaults per region in SkyrimNet settings.
 - A configurable hotkey opens a Magelight list of the player's enriched applied tattoos with visibility checkboxes.
+- Configure the hotkey with the standard SkyrimNet key picker used by SkyrimNet_SexLab: assigned-key display, Set Key, and Unset; no manual scan-code entry.
 - Publish current descriptions through a SkyrimNet prompt extension backed by cached state.
 - Verify that additions, removals, checkbox changes, save loading, and disabling Display reach subsequent prompts.
 - MTF's SkyrimNet display integration is incompatible with this Display feature. Users must disable one of the two display integrations.
@@ -151,3 +152,5 @@ Each enrichment entry has these fields:
 - [MTF source and integration documentation](https://github.com/levchimik/magic-tattoos-framework).
 
 Move this plan to `.agents/plans/completed` after implementation and verification.
+
+- Convert the SkyrimNet picker's Windows VK values to DirectInput scan codes in Papyrus. Support F1–F12, numpad digits/operators, arrows, Home/End, Page Up/Down, Insert/Delete; reject other keys. No SexLab converter dependency.
