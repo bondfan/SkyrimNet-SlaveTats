@@ -13,7 +13,7 @@ SkyrimNet 29, SlaveTats, SlaveTatsNG, Magelight, PapyrusUtil, JContainers, and p
 - Empty slot 32 temporarily makes every enriched tattoo visible without changing saved choices.
 - Magelight visibility screen and configurable hotkey in SkyrimNet's SNT plugin settings.
 - Random tattoo selection from available category/position pairs; existing tattoos are excluded.
-- Eligible clothing is unequipped and dropped before application. Jewelry, weapons, quest items, and SexLabNoStrip items are excluded.
+- Eligible clothing is unequipped and dropped before application. Jewelry, weapons, shields, quest items, and SexLabNoStrip items are excluded.
 
 With duplicate items, the dropped copy may differ from the worn copy, including enchantment or tempering. Clothing already dropped stays on the ground if tattoo application subsequently fails.
 

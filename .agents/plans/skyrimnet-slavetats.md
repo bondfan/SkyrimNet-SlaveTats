@@ -90,7 +90,7 @@ Each enrichment entry has these fields:
 ### Stripping
 
 - Strip the player before tattoo application by unequipping eligible items and dropping one instance of each item form on the ground.
-- Remove worn clothing and armor, including boots, gloves, and helmets; keep jewelry and weapons equipped.
+- Remove worn clothing and armor, including boots, gloves, and helmets; keep jewelry, weapons, and shields equipped.
 - Honor `SexLabNoStrip` (`02F16E:SexLab.esm`) when available; do not add SexLab as a required dependency.
 - Leave protected or undroppable items untouched; do not bypass removal restrictions.
 - Select an eligible tattoo and check capacity before stripping so an empty selection does not cause unnecessary stripping.

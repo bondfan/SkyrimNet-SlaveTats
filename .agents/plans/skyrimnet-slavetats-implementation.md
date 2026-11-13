@@ -123,7 +123,7 @@ Exit: the LLM receives compact choices, selection follows the agreed rules, and 
 ## 8. Add Stripping, Application, and Confirmed Outcomes
 
 - [x] Preflight selection, dependency readiness, and capacity before changing equipment. Candidates are tried in random order until one passes the native eligibility check.
-- [x] Snapshot eligible worn clothing/armor forms once, including boots, gloves, and helmets. Keep jewelry and weapons; deduplicate items occupying multiple slots.
+- [x] Snapshot eligible worn clothing/armor forms once, including boots, gloves, and helmets. Keep jewelry, weapons, and shields; deduplicate items occupying multiple slots.
 - [x] Resolve SexLabNoStrip optionally from `02F16E:SexLab.esm`; filter marked gear and quest items, and skip drops when unequipping fails. Protected/undroppable behavior remains in the runtime checklist.
 - [x] Unequip each eligible form, then drop one instance through the script API. Any copy of that base item is acceptable; do not recreate items or drop all inventory copies.
 - [x] Recheck relevant state after stripping, then apply the selected tattoo without overwriting occupied or locked slots.

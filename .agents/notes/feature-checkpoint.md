@@ -74,4 +74,4 @@ Compiled; none of this is runtime-checked.
 - SlaveTatsNG's interface header types the query/add/synchronize results as `fail_t`: true is failure. The scripts already follow this.
 - The houseCARL import set was gone; recreated with SKSE sources ahead of the approved vanilla baseline.
 
-Open decision: shields are Armor and are stripped and dropped. The specification keeps "weapons" only.
+Decided 2026-11-13: shields (slot 39) stay equipped.

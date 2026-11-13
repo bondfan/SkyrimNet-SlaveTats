@@ -37,7 +37,8 @@ Function StripAndDrop(Actor akWearer) Global
     Int slot = 30
     While slot < 62
         Armor item = akWearer.GetWornForm(Armor.GetMaskForSlot(slot)) as Armor
-        Bool keep = slot == 35 || slot == 36
+        ; Amulet, ring, shield
+        Bool keep = slot == 35 || slot == 36 || slot == 39
         If item && !keep && !Contains(gear, item) && !Contains(protectedItems, item)
             If !(jewelry && item.HasKeyword(jewelry)) && !(noStrip && item.HasKeyword(noStrip))
                 gear[count] = item

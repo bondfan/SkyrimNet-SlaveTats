@@ -5,7 +5,7 @@ description: |
   The exact design is selected randomly. Stay vague before application, such as
   "I'll mark you as you deserve it." Do not promise specific writing or imagery.
   This action unequips eligible clothing and drops it on the ground. Jewelry,
-  weapons, quest items, and SexLabNoStrip items are excluded.
+  weapons, shields, quest items, and SexLabNoStrip items are excluded.
   Application can fail. Only explicit post-application narration confirms the result.
 questEditorId: SNT_MainQuest
 scriptName: SNT_Main
