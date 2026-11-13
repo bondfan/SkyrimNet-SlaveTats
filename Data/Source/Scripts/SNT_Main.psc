@@ -11,15 +11,21 @@ Bool _applying
 Int _generation
 Int _hotkey
 Int _configuredHotkey = -2
+Bool _blocked
 
 Event OnInit()
     Initialize()
 EndEvent
 
+; Each load starts a generation. Work from an earlier generation stops without touching guards.
 Function Initialize()
     _generation += 1
     _refreshing = False
+    _applying = False
+    _blocked = False
     _reloadCatalog = True
+    StorageUtil.SetIntValue(Game.GetPlayer(), "SNT_Ready", 0)
+    StorageUtil.SetIntValue(None, "SNT_ApplyReady", 0)
     RegisterForModEvent("SkyrimNet_OnPluginConfigSaved", "OnSettingsSaved")
     RegisterForModEvent("Magelight_ViewDomReady", "OnViewReady")
     RegisterForModEvent("Magelight_UIModeEntered", "OnViewReady")
@@ -34,10 +40,33 @@ Event OnSettingsSaved(String eventName, String strArg, Float numArg, Form sender
 EndEvent
 
 Function RequestRefresh()
+    If _blocked
+        Return
+    EndIf
     RegisterForSingleUpdate(0.5)
 EndFunction
 
+String Function MissingDependency()
+    If !JContainers.isInstalled()
+        Return "JContainers"
+    EndIf
+    If PapyrusUtil.GetVersion() <= 0
+        Return "PapyrusUtil"
+    EndIf
+    If SlaveTatsNG.VERSION() == ""
+        Return "SlaveTatsNG"
+    EndIf
+    If SkyrimNetApi.GetBuildVersion() == ""
+        Return "SkyrimNet"
+    EndIf
+    If PO3_SKSEFunctions.GetPapyrusExtenderVersion().Length == 0
+        Return "powerofthree's Papyrus Extender"
+    EndIf
+    Return ""
+EndFunction
+
 Event OnUpdate()
+    Int generation = _generation
     Actor wearer = Game.GetPlayer()
     If !wearer
         RegisterForSingleUpdate(1.0)
@@ -48,6 +77,16 @@ Event OnUpdate()
         Return
     EndIf
     _refreshing = True
+    If _reloadCatalog
+        String missing = MissingDependency()
+        If missing != ""
+            _blocked = True
+            _refreshing = False
+            Debug.Trace("[SNT] Disabled until next load; missing " + missing, 2)
+            Debug.Notification("SkyrimNet - SlaveTats disabled: " + missing + " missing.")
+            Return
+        EndIf
+    EndIf
     SetupUI()
     If _reloadCatalog
         StorageUtil.SetStringValue(wearer, "SNT_VisibleTattoos", "")
@@ -57,10 +96,9 @@ Event OnUpdate()
         _applied = JValue.release(_applied)
         _sources = JValue.release(_sources)
         _candidates = JValue.release(_candidates)
-        _applying = False
         StorageUtil.SetIntValue(None, "SNT_ApplyReady", 0)
         _catalog = SNT_Catalog.Load()
-        _reloadCatalog = _catalog == 0
+        _reloadCatalog = _catalog == 0 || generation != _generation
         Debug.Trace("[SNT] Controller initialized; SkyrimNet=" + SkyrimNetApi.GetBuildVersion())
         Debug.Trace("[SNT] Enrichment entries=" + JMap.count(_catalog))
     EndIf
@@ -69,9 +107,16 @@ Event OnUpdate()
     If !displayEnabled
         StorageUtil.SetStringValue(wearer, "SNT_VisibleTattoos", "")
     EndIf
+    If !applyEnabled
+        StorageUtil.SetIntValue(None, "SNT_ApplyReady", 0)
+        StorageUtil.SetStringValue(wearer, "SNT_AvailableTattoos", "")
+    EndIf
     If _catalog && (displayEnabled || applyEnabled)
         RefreshTattoos(wearer, displayEnabled)
         RefreshCandidates(wearer, applyEnabled)
+    EndIf
+    If generation != _generation
+        Return
     EndIf
     _refreshing = False
     If displayEnabled || applyEnabled
@@ -144,55 +189,77 @@ Function RefreshTattoos(Actor akWearer, Bool abDisplay)
 EndFunction
 
 Bool Function ApplyTattoo(Actor akInitiator, String asCategory, String asPosition)
-    If !akInitiator || _applying || _refreshing || !_candidates
+    If !akInitiator || !SkyrimNetApi.GetConfigBool("Plugin_SNT", "features.apply", True)
         Return False
     EndIf
-    If !SkyrimNetApi.GetConfigBool("Plugin_SNT", "features.apply", True)
+    Int waited = 0
+    While _refreshing && waited < 50
+        Utility.Wait(0.1)
+        waited += 1
+    EndWhile
+    ; No call may separate this check from taking the guard.
+    If _applying || _refreshing || !_candidates
         Return False
     EndIf
     _applying = True
-    StorageUtil.SetIntValue(None, "SNT_ApplyReady", 0)
     Int generation = _generation
+    StorageUtil.SetIntValue(None, "SNT_ApplyReady", 0)
     Actor wearer = Game.GetPlayer()
-    Int matches = JValue.retain(JMap.object())
+    Int matches = JValue.retain(JArray.object())
     Int identities = JValue.retain(JMap.allKeys(_candidates))
     Int index = 0
     While index < JArray.count(identities)
         String identity = JArray.getStr(identities, index)
         Int enriched = JMap.getObj(_candidates, identity)
         If JMap.getStr(enriched, "Category") == asCategory && JMap.getStr(enriched, "Position") == asPosition
-            Int sourceTattoo = JMap.getObj(_sources, identity)
-            If SNT_SlaveTats.CanApply(wearer, sourceTattoo)
-                JMap.setObj(matches, identity, enriched)
-            EndIf
+            JArray.addStr(matches, identity)
         EndIf
         index += 1
     EndWhile
     JValue.release(identities)
-    identities = JValue.retain(JMap.allKeys(matches))
-    Int count = JArray.count(identities)
-    Bool confirmed = False
-    If count > 0 && generation == _generation
-        String identity = JArray.getStr(identities, Utility.RandomInt(0, count - 1))
-        Int enriched = JMap.getObj(matches, identity)
-        Int sourceTattoo = JMap.getObj(_sources, identity)
-        SNT_Equipment.StripAndDrop(wearer)
-        If generation == _generation && SNT_SlaveTats.CanApply(wearer, sourceTattoo)
-            Bool applied = SNT_SlaveTats.Apply(wearer, sourceTattoo)
-            Int snapshot = SNT_SlaveTats.AppliedSnapshot(wearer)
-            confirmed = applied && snapshot && SNT_SlaveTats.FindApplied(snapshot, JMap.getStr(enriched, "Section"), JMap.getStr(enriched, "Name")) != 0
-            JValue.release(snapshot)
-            If confirmed && generation == _generation
-                SkyrimNetApi.DirectNarration("The initiating character has applied a tattoo to the player: " + JMap.getStr(enriched, "Content") + " on " + JMap.getStr(enriched, "Position") + ".", akInitiator, wearer)
-            EndIf
+    String selected = ""
+    While selected == "" && JArray.count(matches) > 0 && generation == _generation
+        index = Utility.RandomInt(0, JArray.count(matches) - 1)
+        String candidate = JArray.getStr(matches, index)
+        If SNT_SlaveTats.CanApply(wearer, JMap.getObj(_sources, candidate))
+            selected = candidate
+        Else
+            JArray.eraseIndex(matches, index)
         EndIf
-    EndIf
-    JValue.release(identities)
+    EndWhile
     JValue.release(matches)
-    _applying = False
-    RequestRefresh()
+    Bool confirmed = selected != "" && StripAndApply(akInitiator, wearer, selected, generation)
     If !confirmed
         Debug.Trace("[SNT] Tattoo application did not complete; no success event emitted", 1)
+    EndIf
+    If generation == _generation
+        _applying = False
+        RequestRefresh()
+    EndIf
+    Return confirmed
+EndFunction
+
+Bool Function StripAndApply(Actor akInitiator, Actor akWearer, String asIdentity, Int aiGeneration)
+    If aiGeneration != _generation
+        Return False
+    EndIf
+    Int enriched = JMap.getObj(_candidates, asIdentity)
+    Int sourceTattoo = JMap.getObj(_sources, asIdentity)
+    String section = JMap.getStr(enriched, "Section")
+    String tattooName = JMap.getStr(enriched, "Name")
+    String narration = "The initiating character has applied a tattoo to the player: " + JMap.getStr(enriched, "Content") + " on " + JMap.getStr(enriched, "Position") + "."
+    SNT_Equipment.StripAndDrop(akWearer)
+    If aiGeneration != _generation || !SNT_SlaveTats.CanApply(akWearer, sourceTattoo)
+        Return False
+    EndIf
+    If !SNT_SlaveTats.Apply(akWearer, sourceTattoo)
+        Return False
+    EndIf
+    Int snapshot = SNT_SlaveTats.AppliedSnapshot(akWearer)
+    Bool confirmed = snapshot && SNT_SlaveTats.FindApplied(snapshot, section, tattooName) != 0
+    JValue.release(snapshot)
+    If confirmed && aiGeneration == _generation
+        SkyrimNetApi.DirectNarration(narration, akInitiator, akWearer)
     EndIf
     Return confirmed
 EndFunction
@@ -423,16 +490,17 @@ Event OnCloseUI(String eventName, String strArg, Float numArg, Form sender)
 EndEvent
 
 Event OnVisibilityChanged(String eventName, String strArg, Float numArg, Form sender)
-    If numArg as Int != _view || !_applied || _refreshing
+    If numArg as Int != _view
         Return
     EndIf
     String identity = SkyrimNetApi.GetJsonString(strArg, "identity", "")
     Int enriched = JMap.getObj(_catalog, identity)
     Int visibility = SkyrimNetApi.GetJsonInt(strArg, "visibility", 0)
-    If !enriched || !JMap.hasKey(_applied, identity) || (visibility != 1 && visibility != 2)
-        Return
+    Actor wearer = Game.GetPlayer()
+    ; A stored choice marks a detected tattoo; the refresh redraws the list either way.
+    If enriched && (visibility == 1 || visibility == 2) && StorageUtil.GetIntValue(wearer, identity, 0) != 0
+        SNT_Storage.SetVisibility(wearer, JMap.getStr(enriched, "Section"), JMap.getStr(enriched, "Name"), visibility == 2)
     EndIf
-    SNT_Storage.SetVisibility(Game.GetPlayer(), JMap.getStr(enriched, "Section"), JMap.getStr(enriched, "Name"), visibility == 2)
     RequestRefresh()
 EndEvent
 

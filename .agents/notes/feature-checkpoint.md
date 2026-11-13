@@ -58,3 +58,20 @@ This is a development checkpoint, not completed acceptance. No unsupported test 
 
 - Root cause: dashboard hotkey values are Windows VK codes, not DirectInput scan codes. Installed SexLab source converts explicitly; a live read-only VkToDxScanCode(97) call returned 79. Earlier diagnosis was incomplete.
 - User chose independence with limited supported keys. Added conversion for F1–F12, numpad digits/operators, and navigation keys; unsupported selections unbind and notify. Windows SDK dinput.h confirms all 37 mappings. Compiled; runtime check pending after restart.
+
+## 2026-11-13 Code Review
+
+Compiled; none of this is runtime-checked.
+
+- Dependency gate: JContainers, PapyrusUtil, SlaveTatsNG, SkyrimNet, or Papyrus Extender missing disables the controller until the next load and notifies once.
+- Loading clears `SNT_Ready` and `SNT_ApplyReady` immediately; previously the saved summary stayed readable until the first refresh.
+- Each load starts a generation. Refresh or application resumed from the save stops without releasing the new generation's guards.
+- `ApplyTattoo` took its guard after a native call, so two requests could both pass. The check and assignment are now adjacent.
+- `ApplyTattoo` waits up to 5 seconds for a running refresh; previously it failed.
+- Selection ran the native eligibility query for every matching candidate. It now tries random candidates until one passes.
+- A checkbox click during a refresh was discarded. It is now saved.
+- With both features disabled, `SNT_ApplyReady` kept its last value and the prompt kept listing choices. Disabling Apply now clears both.
+- SlaveTatsNG's interface header types the query/add/synchronize results as `fail_t`: true is failure. The scripts already follow this.
+- The houseCARL import set was gone; recreated with SKSE sources ahead of the approved vanilla baseline.
+
+Open decision: shields are Armor and are stripped and dropped. The specification keeps "weapons" only.

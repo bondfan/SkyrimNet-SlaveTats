@@ -1,6 +1,6 @@
 # SkyrimNet - SlaveTats: Implementation Plan
 
-Status: Display, its UI, and the converted hotkey passed the recorded runtime checks. Apply is implemented and registered; end-to-end application, failure cases, save restoration, and performance checks remain open. See [feature-checkpoint.md](../notes/feature-checkpoint.md).
+Status: Display, its UI, and the converted hotkey passed the recorded runtime checks. Apply is implemented and registered; all code tasks are done. End-to-end application, failure cases, save restoration, and performance checks remain open. See [feature-checkpoint.md](../notes/feature-checkpoint.md).
 
 Specification: [skyrimnet-slavetats.md](skyrimnet-slavetats.md). Original idea: [SkyrimNet - Tats.md](../../SkyrimNet%20-%20Tats.md).
 
@@ -11,7 +11,7 @@ Specification: [skyrimnet-slavetats.md](skyrimnet-slavetats.md). Original idea: 
 - Use a small ESL-flagged plugin for the controller quest and player alias. Keep catalog, reconciliation, visibility, selection, and UI responsibilities separate without adding a framework.
 - Compile scripts and verify behavior in-game. Papyrus development is exempt from unit-test requirements; do not create a standalone test runner.
 - Confirm unresolved technical choices before adding dependencies or changing structure.
-- Stage added files; do not commit. Use UTF-8 without BOM.
+- Commit on branch `skyrimnet-slavetats-implementation`. Use UTF-8 without BOM.
 
 Checked implementation tasks mean the code exists and compiles; they do not establish gameplay verification. Runtime checks are tracked separately.
 
@@ -38,7 +38,7 @@ Exit: each integration has a documented usable route. Ask before substituting an
 - [x] Create the ESL-flagged controller quest, player alias, startup bookkeeping, and required SEQ through houseCARL after schema lookup.
 - [x] Add minimal startup/player-load scripts and logging. Compile and verify initialization in-game before adding feature logic.
 - [x] Add script helpers for SlaveTatsNG, SkyrimNet, Magelight, equipment, and namespaced StorageUtil access.
-- [ ] Implement dependency readiness checks and save-load/new-game initialization. Missing or incompatible APIs must not trigger invalid calls.
+- [x] Implement dependency readiness checks and save-load/new-game initialization. A missing dependency disables the controller until the next load. Runtime check of the missing-dependency path remains open.
 - [x] Re-register session-only callbacks on loading and invalidate transient caches and stale pending work.
 - [x] Guard overlapping refresh/application work and publish only completed snapshots; do not assume separate Papyrus callbacks cannot overlap.
 - [x] Use single-update scheduling for periodic refresh and deferred equipment checks; no per-frame polling or permanent busy loops.
@@ -79,7 +79,7 @@ Exit: changes made through SlaveTats or another mod reconcile correctly; loading
 - [x] Preserve saved choices throughout the temporary all-visible override. Default Face visibility applies only to newly detected tattoos.
 - [x] Publish each complete visible-tattoo summary to one namespaced StorageUtil string on the player. Replace it only when output changes; treat Content as descriptive data and serialize/escape it correctly.
 - [x] Read the summary through SkyrimNet's built-in `papyrus_util` reader. Keep scans and custom Papyrus decorator calls out of the summary-rendering path.
-- [ ] After loading, rebuild the summary before treating it as current. Gate output on feature settings and readiness so serialized stale text is not exposed.
+- [x] After loading, rebuild the summary before treating it as current. Loading clears both readiness flags before any refresh; disabling Apply clears its choices even when Display is also disabled.
 - [x] Include only the player's summary, and avoid repeating it once per NPC bio in the same prompt.
 - [x] Rebuild prepared output when effective content changes. Local template preview included checked marks and excluded the hidden mark.
 - [ ] Verify subsequent conversations do not retain removed or newly hidden tattoos through SkyrimNet caches.
@@ -122,7 +122,7 @@ Exit: the LLM receives compact choices, selection follows the agreed rules, and 
 
 ## 8. Add Stripping, Application, and Confirmed Outcomes
 
-- [ ] Preflight selection, dependency readiness, and capacity before changing equipment.
+- [x] Preflight selection, dependency readiness, and capacity before changing equipment. Candidates are tried in random order until one passes the native eligibility check.
 - [x] Snapshot eligible worn clothing/armor forms once, including boots, gloves, and helmets. Keep jewelry and weapons; deduplicate items occupying multiple slots.
 - [x] Resolve SexLabNoStrip optionally from `02F16E:SexLab.esm`; filter marked gear and quest items, and skip drops when unequipping fails. Protected/undroppable behavior remains in the runtime checklist.
 - [x] Unequip each eligible form, then drop one instance through the script API. Any copy of that base item is acceptable; do not recreate items or drop all inventory copies.
@@ -130,7 +130,7 @@ Exit: the LLM receives compact choices, selection follows the agreed rules, and 
 - [x] Read back the applied identity before reporting success. Distinguish work being queued from application being completed in the SkyrimNet callback contract.
 - [x] Update cached tattoo/visibility state after completion and emit narration using the actual Content and Position.
 - [x] On failure, report the actual outcome without successful-tattoo narration. Dropped clothing is a separate completed side effect; do not imply it was restored.
-- [ ] Cancel stale work across save transitions and release the in-progress guard on every completion/failure path.
+- [x] Cancel stale work across save transitions and release the in-progress guard on every completion/failure path. Each load starts a generation; earlier work stops before stripping, applying, or narrating.
 
 Exit: one action unequips eligible clothing, drops one instance per eligible form, applies one tattoo, and narrates only a confirmed result.
 
