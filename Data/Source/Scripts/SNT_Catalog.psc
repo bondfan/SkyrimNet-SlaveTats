@@ -51,6 +51,7 @@ EndFunction
 
 Bool Function IsPosition(String asPosition) Global
     Return asPosition == "Face" || asPosition == "Neck" || asPosition == "Back" || \
+        asPosition == "Chest" || asPosition == "Belly" || \
         asPosition == "Ass" || asPosition == "Pubic Area" || asPosition == "All Over" || \
         asPosition == "Left Arm" || asPosition == "Right Arm" || \
         asPosition == "Left Lower Leg" || asPosition == "Right Lower Leg" || \

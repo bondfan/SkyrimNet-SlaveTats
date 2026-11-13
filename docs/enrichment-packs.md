@@ -18,7 +18,7 @@ Each file contains an array. Replace the example source identity with an install
 
 All fields are nonempty strings. `Section` and `Name` identify an installed SlaveTats tattoo.
 
-Positions: Face, Neck, Back, Ass, Pubic Area, All Over, Left Arm, Right Arm, Left Upper Leg, Right Upper Leg, Left Lower Leg, Right Lower Leg, Left Hand, Right Hand, Left Foot, Right Foot.
+Positions: Face, Neck, Chest, Belly, Back, Ass, Pubic Area, All Over, Left Arm, Right Arm, Left Upper Leg, Right Upper Leg, Left Lower Leg, Right Lower Leg, Left Hand, Right Hand, Left Foot, Right Foot.
 
 One invalid entry or duplicate identity rejects every pack; the Papyrus log names the file and entry. Loading retries every 15 seconds.
 Entries without an installed tattoo are ignored.

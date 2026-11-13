@@ -33,6 +33,20 @@ schema:
       category: "New tattoo visibility"
       supportsOverride: false
 
+    - name: "Chest"
+      path: "visibility.Chest"
+      type: "bool"
+      defaultValue: false
+      category: "New tattoo visibility"
+      supportsOverride: false
+
+    - name: "Belly"
+      path: "visibility.Belly"
+      type: "bool"
+      defaultValue: false
+      category: "New tattoo visibility"
+      supportsOverride: false
+
     - name: "Back"
       path: "visibility.Back"
       type: "bool"

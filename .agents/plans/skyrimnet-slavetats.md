@@ -31,7 +31,7 @@ Each enrichment entry has these fields:
 
 - Use the pair `(Section, Name)` as the stable identity; no separate integer Id.
 - Keep the SlaveTats area separate from the display region: texture placement cannot be changed by selecting a region.
-- Regions: Face, Neck, Back, Ass, Pubic Area, All Over; left/right Arm, Lower Leg, Upper Leg, Hand, Foot.
+- Regions: Face, Neck, Chest, Belly, Back, Ass, Pubic Area, All Over; left/right Arm, Lower Leg, Upper Leg, Hand, Foot.
 - Use All Over for multi-region tattoos. No partial-visibility model or region arrays.
 - The player decides whether the entire tattoo is visible.
 - Enrichment describes the existing texture; it does not generate lettering or imagery.
