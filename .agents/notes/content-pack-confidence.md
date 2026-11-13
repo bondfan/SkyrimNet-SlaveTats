@@ -5,7 +5,7 @@ Date: 2026-11-13. Packs: `Data/SKSE/Plugins/SkyrimNet-SlaveTats/Packs/alpia-slav
 ## Method
 
 - First pass: text, category and position derived from the SlaveTats JSON names and sections.
-- Second pass: textures rendered from their alpha channel, cropped and read. Alpia: all 267. Zaki: 189, covering every truncated name, Feet, Wrists, Head, counters, numbered variants, hearts and one sample each for Shoulder, Hip and Side. The other Zaki entries rely on names; every sampled name matched its texture.
+- Second pass: textures rendered from their alpha channel, cropped and read. Alpia: all 267. Zaki: 93 of 841, covering every truncated name, Feet, Wrists, Head, counters, numbered variants, hearts and one sample each for Shoulder, Hip and Side. The other Zaki entries rely on names; every sampled name matched its texture.
 - Textures that straddle UV seams (flanks, hips, butt cheeks) render as fragments and were not fully legible.
 - Nothing was tested in game.
 - `Chest` and `Belly` were added to the position vocabulary for these packs.
