@@ -75,3 +75,11 @@ Compiled; none of this is runtime-checked.
 - The houseCARL import set was gone; recreated with SKSE sources ahead of the approved vanilla baseline.
 
 Decided 2026-11-13: shields (slot 39) stay equipped.
+
+## 2026-11-14 Missing Apply Action
+
+- Cause 1: saved settings had `features.apply` and `features.display` false.
+- Cause 2: SlaveTatsNG 0.8.3 reads zero overlay slots from `skee64.ini`, so no pool has a free slot. Fixed upstream in 0.8.4.
+- The controller now logs `Display and Apply disabled; idle` and `Apply candidates=N; pools without a free slot: …`, once per load and on change.
+- Live state is readable through SkyrimNet's MCP server (`localhost:8889`, SSE): `render_template` with `papyrus_util` and `get_script_property`, and `check_action_eligibility`.
+- The active MO2 mod is `SkyrimNet - SlaveTats`; `houseCARL - SkyrimNet-SlaveTats` is disabled.

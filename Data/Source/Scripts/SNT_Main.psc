@@ -12,6 +12,16 @@ Int _generation
 Int _hotkey
 Int _configuredHotkey = -2
 Bool _blocked
+String _status
+
+; Logs a state once per load, and again when it changes.
+Function LogStatus(String asStatus)
+    If _status == asStatus
+        Return
+    EndIf
+    _status = asStatus
+    Debug.Trace("[SNT] " + asStatus)
+EndFunction
 
 Event OnInit()
     Initialize()
@@ -23,6 +33,7 @@ Function Initialize()
     _refreshing = False
     _applying = False
     _blocked = False
+    _status = ""
     _reloadCatalog = True
     StorageUtil.SetIntValue(Game.GetPlayer(), "SNT_Ready", 0)
     StorageUtil.SetIntValue(None, "SNT_ApplyReady", 0)
@@ -110,6 +121,9 @@ Event OnUpdate()
     If !applyEnabled
         StorageUtil.SetIntValue(None, "SNT_ApplyReady", 0)
         StorageUtil.SetStringValue(wearer, "SNT_AvailableTattoos", "")
+    EndIf
+    If !displayEnabled && !applyEnabled
+        LogStatus("Display and Apply disabled; idle")
     EndIf
     If _catalog && (displayEnabled || applyEnabled)
         RefreshTattoos(wearer, displayEnabled)
@@ -294,12 +308,17 @@ Function RefreshCandidates(Actor akWearer, Bool abEnabled)
     Int pools = JValue.retain(JMap.object())
     Int identities = JValue.retain(JMap.allKeys(_sources))
     Int index = 0
+    String fullPools = ""
     While index < JArray.count(identities)
         String identity = JArray.getStr(identities, index)
         Int sourceTattoo = JMap.getObj(_sources, identity)
         String poolName = SNT_SlaveTats.Pool(sourceTattoo)
         If !JMap.hasKey(pools, poolName)
-            JMap.setInt(pools, poolName, SNT_SlaveTats.HasFreeSlot(akWearer, poolName) as Int)
+            Bool free = SNT_SlaveTats.HasFreeSlot(akWearer, poolName)
+            JMap.setInt(pools, poolName, free as Int)
+            If !free
+                fullPools += " " + poolName
+            EndIf
         EndIf
         If !JMap.hasKey(_applied, identity) && JMap.getInt(pools, poolName) == 1
             Int enriched = JMap.getObj(_catalog, identity)
@@ -317,6 +336,10 @@ Function RefreshCandidates(Actor akWearer, Bool abEnabled)
     EndWhile
     JValue.release(identities)
     JValue.release(pools)
+    If fullPools == ""
+        fullPools = " none"
+    EndIf
+    LogStatus("Apply candidates=" + JMap.count(_candidates) + "; pools without a free slot:" + fullPools)
     Int categories = JValue.retain(JMap.allKeys(pairs))
     String choices = ""
     index = 0
