@@ -27,7 +27,7 @@ Date: 2026-11-13. Packs: `Data/SKSE/Plugins/SkyrimNet-SlaveTats/Packs/alpia-slav
 - Installed sets only: Bondage, Crime, Public Whore 2, Toilet Prison. Beggar, Public Whore and General are not installed.
 - Names often abbreviate the handwriting; about 120 entries were reworded or completed from the texture.
 - Drawings, symbols, kanji and printed service lists are described from the texture.
-- Category is the set name (`bondage`, `crime`, `whore`, `toilet`), not the individual text. Generic insults in the Crime set are therefore `crime`.
+- Category is the set name (`bondage`, `crime`, `whore`, `toilet`), not the individual text. Exception: 88 Crime-set entries without a crime, theft, prison or punishment reference are `humiliation`; 26 stay `crime`, including the six full-body sets and puns such as “Steal her pride” and “I love backstabbing”.
 - Sections `Alpia Left`/`Alpia Right` sit on the flanks and hips and map to `Belly`.
 - `PW` prefix treated as a set marker and dropped from the text.
 - Two full-body tattoos share Section and Name between a face and a body texture; each is listed once.
