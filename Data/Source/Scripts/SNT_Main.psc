@@ -13,6 +13,9 @@ Int _hotkey
 Int _configuredHotkey = -2
 Bool _blocked
 String _status
+Int _categories
+String _summary
+String _choices
 
 ; Logs a state once per load, and again when it changes.
 Function LogStatus(String asStatus)
@@ -100,8 +103,10 @@ Event OnUpdate()
     EndIf
     SetupUI()
     If _reloadCatalog
-        StorageUtil.SetStringValue(wearer, "SNT_VisibleTattoos", "")
-        StorageUtil.SetStringValue(wearer, "SNT_AvailableTattoos", "")
+        StorageUtil.UnsetStringValue(wearer, "SNT_VisibleTattoos")
+        StorageUtil.UnsetStringValue(wearer, "SNT_AvailableTattoos")
+        ClearVisible(wearer)
+        ClearChoices(wearer)
         StorageUtil.SetIntValue(wearer, "SNT_Ready", 0)
         _catalog = JValue.release(_catalog)
         _applied = JValue.release(_applied)
@@ -109,6 +114,8 @@ Event OnUpdate()
         _candidates = JValue.release(_candidates)
         StorageUtil.SetIntValue(None, "SNT_ApplyReady", 0)
         _catalog = SNT_Catalog.Load()
+        _categories = JValue.release(_categories)
+        _categories = SNT_Catalog.LoadCategories()
         _reloadCatalog = _catalog == 0 || generation != _generation
         Debug.Trace("[SNT] Controller initialized; SkyrimNet=" + SkyrimNetApi.GetBuildVersion())
         Debug.Trace("[SNT] Enrichment entries=" + JMap.count(_catalog))
@@ -116,11 +123,11 @@ Event OnUpdate()
     Bool displayEnabled = SkyrimNetApi.GetConfigBool("Plugin_SNT", "features.display", True)
     Bool applyEnabled = SkyrimNetApi.GetConfigBool("Plugin_SNT", "features.apply", True)
     If !displayEnabled
-        StorageUtil.SetStringValue(wearer, "SNT_VisibleTattoos", "")
+        ClearVisible(wearer)
     EndIf
     If !applyEnabled
         StorageUtil.SetIntValue(None, "SNT_ApplyReady", 0)
-        StorageUtil.SetStringValue(wearer, "SNT_AvailableTattoos", "")
+        ClearChoices(wearer)
     EndIf
     If !displayEnabled && !applyEnabled
         LogStatus("Display and Apply disabled; idle")
@@ -146,6 +153,8 @@ Function RefreshTattoos(Actor akWearer, Bool abDisplay)
     Int current = JValue.retain(JMap.object())
     Int index = 0
     String summary = ""
+    Int positions = JValue.retain(JArray.object())
+    Int contents = JValue.retain(JArray.object())
     Bool nude = akWearer.GetWornForm(Armor.GetMaskForSlot(32)) == None
     While index < JArray.count(snapshot)
         Int tattoo = JArray.getObj(snapshot, index)
@@ -163,10 +172,10 @@ Function RefreshTattoos(Actor akWearer, Bool abDisplay)
                 visibility = SNT_Storage.GetVisibility(akWearer, section, tattooName)
             EndIf
             If abDisplay && (nude || visibility == 2)
-                If summary != ""
-                    summary += "; "
-                EndIf
-                summary += position + ": " + JMap.getStr(enriched, "Content")
+                String content = JMap.getStr(enriched, "Content")
+                summary += position + ": " + content + "; "
+                JArray.addStr(positions, position)
+                JArray.addStr(contents, content)
             EndIf
         EndIf
         index += 1
@@ -195,9 +204,19 @@ Function RefreshTattoos(Actor akWearer, Bool abDisplay)
     _applied = JValue.release(_applied)
     _applied = current
     JValue.release(snapshot)
-    If StorageUtil.GetStringValue(akWearer, "SNT_VisibleTattoos", "") != summary
-        StorageUtil.SetStringValue(akWearer, "SNT_VisibleTattoos", summary)
+    If _summary != summary
+        StorageUtil.SetIntValue(akWearer, "SNT_Ready", 0)
+        ClearVisible(akWearer)
+        index = 0
+        While index < JArray.count(contents)
+            StorageUtil.StringListAdd(akWearer, "SNT_VisiblePositions", JArray.getStr(positions, index))
+            StorageUtil.StringListAdd(akWearer, "SNT_VisibleContents", JArray.getStr(contents, index))
+            index += 1
+        EndWhile
+        _summary = summary
     EndIf
+    JValue.release(positions)
+    JValue.release(contents)
     StorageUtil.SetIntValue(akWearer, "SNT_Ready", 1)
     UpdateUI()
 EndFunction
@@ -278,10 +297,52 @@ Bool Function StripAndApply(Actor akInitiator, Actor akWearer, String asIdentity
     Return confirmed
 EndFunction
 
+Function ClearVisible(Actor akWearer)
+    _summary = ""
+    StorageUtil.StringListClear(akWearer, "SNT_VisiblePositions")
+    StorageUtil.StringListClear(akWearer, "SNT_VisibleContents")
+EndFunction
+
+Function ClearChoices(Actor akWearer)
+    _choices = ""
+    String[] categories = StorageUtil.StringListToArray(akWearer, "SNT_ChoiceCategories")
+    Int index = 0
+    While index < categories.Length
+        StorageUtil.StringListClear(akWearer, "SNT_ChoicePositions:" + categories[index])
+        StorageUtil.UnsetStringValue(akWearer, "SNT_ChoiceDescription:" + categories[index])
+        index += 1
+    EndWhile
+    StorageUtil.StringListClear(akWearer, "SNT_ChoiceCategories")
+EndFunction
+
+; Positions are published in vocabulary order.
+Function PublishChoices(Actor akWearer, Int aiCategories, Int aiPairs)
+    ClearChoices(akWearer)
+    String[] vocabulary = SNT_Catalog.Positions()
+    Int index = 0
+    While index < JArray.count(aiCategories)
+        String category = JArray.getStr(aiCategories, index)
+        Int offered = JMap.getObj(aiPairs, category)
+        StorageUtil.StringListAdd(akWearer, "SNT_ChoiceCategories", category)
+        String explanation = JMap.getStr(_categories, category)
+        If explanation != ""
+            StorageUtil.SetStringValue(akWearer, "SNT_ChoiceDescription:" + category, explanation)
+        EndIf
+        Int positionIndex = 0
+        While positionIndex < vocabulary.Length
+            If JMap.hasKey(offered, vocabulary[positionIndex])
+                StorageUtil.StringListAdd(akWearer, "SNT_ChoicePositions:" + category, vocabulary[positionIndex])
+            EndIf
+            positionIndex += 1
+        EndWhile
+        index += 1
+    EndWhile
+EndFunction
+
 Function RefreshCandidates(Actor akWearer, Bool abEnabled)
     StorageUtil.SetIntValue(None, "SNT_ApplyReady", 0)
     If !abEnabled || !_applied
-        StorageUtil.SetStringValue(akWearer, "SNT_AvailableTattoos", "")
+        ClearChoices(akWearer)
         Return
     EndIf
     If !_sources
@@ -341,29 +402,29 @@ Function RefreshCandidates(Actor akWearer, Bool abEnabled)
     EndIf
     LogStatus("Apply candidates=" + JMap.count(_candidates) + "; pools without a free slot:" + fullPools)
     Int categories = JValue.retain(JMap.allKeys(pairs))
+    String[] vocabulary = SNT_Catalog.Positions()
     String choices = ""
     index = 0
     While index < JArray.count(categories)
         String category = JArray.getStr(categories, index)
-        If choices != ""
-            choices += "; "
-        EndIf
-        choices += category + ": "
-        Int positions = JValue.retain(JMap.allKeys(JMap.getObj(pairs, category)))
+        Int offered = JMap.getObj(pairs, category)
+        choices += category + ":"
         Int positionIndex = 0
-        While positionIndex < JArray.count(positions)
-            If positionIndex > 0
-                choices += ", "
+        While positionIndex < vocabulary.Length
+            If JMap.hasKey(offered, vocabulary[positionIndex])
+                choices += positionIndex + ","
             EndIf
-            choices += JArray.getStr(positions, positionIndex)
             positionIndex += 1
         EndWhile
-        JValue.release(positions)
+        choices += ";"
         index += 1
     EndWhile
+    If _choices != choices
+        PublishChoices(akWearer, categories, pairs)
+        _choices = choices
+    EndIf
     JValue.release(categories)
     JValue.release(pairs)
-    StorageUtil.SetStringValue(akWearer, "SNT_AvailableTattoos", choices)
     If choices != "" && !_applying
         StorageUtil.SetIntValue(None, "SNT_ApplyReady", 1)
     EndIf

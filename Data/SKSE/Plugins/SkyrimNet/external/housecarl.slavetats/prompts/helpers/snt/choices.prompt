@@ -1,0 +1,10 @@
+{# Category/position choices published by SNT_Main; rendered inside the SNT_ApplyTattoo description. snt_names repeats SNT_Catalog.Positions(). #}
+{% set snt_names = ["Face", "Neck", "Chest", "Belly", "Back", "Ass", "Pubic Area", "Left Arm", "Right Arm", "Left Hand", "Right Hand", "Left Upper Leg", "Right Upper Leg", "Left Lower Leg", "Right Lower Leg", "Left Foot", "Right Foot", "All Over"] %}
+{% for snt_category in papyrus_util("GetStringList", player.UUID, "SNT_ChoiceCategories") %}
+
+**{{ capitalize(snt_category) }}** {{ papyrus_util("GetStringValue", player.UUID, "SNT_ChoiceDescription:" + snt_category, "") }}
+
+{% for snt_place in papyrus_util("GetStringList", player.UUID, "SNT_ChoicePositions:" + snt_category) %}
+* {% for snt_name in snt_names %}{% if lower(snt_name) == lower(snt_place) %}{{ snt_name }}{% endif %}{% endfor %}
+{% endfor %}
+{% endfor %}

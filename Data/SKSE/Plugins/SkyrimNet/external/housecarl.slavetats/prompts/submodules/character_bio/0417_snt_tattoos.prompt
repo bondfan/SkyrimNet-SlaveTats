@@ -1,0 +1,15 @@
+{# Player tattoos published by SNT_Main. snt_names repeats SNT_Catalog.Positions(): published names can arrive in any letter case. #}
+{% if is_player(actorUUID) and is_plugin_loaded("SkyrimNet-SlaveTats.esp") and render_mode in ["full", "thoughts", "transform", "dialogue_target"] %}
+{% if papyrus_util("GetIntValue", player.UUID, "SNT_Ready", 0) == 1 %}
+{% set snt_contents = papyrus_util("GetStringList", player.UUID, "SNT_VisibleContents") %}
+{% set snt_places = papyrus_util("GetStringList", player.UUID, "SNT_VisiblePositions") %}
+{% if length(snt_contents) > 0 %}
+{% set snt_names = ["Face", "Neck", "Chest", "Belly", "Back", "Ass", "Pubic Area", "Left Arm", "Right Arm", "Left Hand", "Right Hand", "Left Upper Leg", "Right Upper Leg", "Left Lower Leg", "Right Lower Leg", "Left Foot", "Right Foot", "All Over"] %}
+## Visible tattoos on {{ player.name }}:
+{% for snt_content in snt_contents %}
+{% set snt_place = at(snt_places, loop.index) %}
+- {% for snt_name in snt_names %}{% if lower(snt_name) == lower(snt_place) %}{{ snt_name }}{% endif %}{% endfor %}: {{ snt_content }}
+{% endfor %}
+{% endif %}
+{% endif %}
+{% endif %}
