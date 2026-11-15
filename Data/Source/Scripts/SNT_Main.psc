@@ -105,6 +105,7 @@ Event OnUpdate()
     If _reloadCatalog
         StorageUtil.UnsetStringValue(wearer, "SNT_VisibleTattoos")
         StorageUtil.UnsetStringValue(wearer, "SNT_AvailableTattoos")
+        StorageUtil.UnsetStringValue(wearer, "SNT_AppliedTattoos")
         ClearVisible(wearer)
         ClearChoices(wearer)
         StorageUtil.SetIntValue(wearer, "SNT_Ready", 0)
@@ -130,6 +131,7 @@ Event OnUpdate()
         ClearChoices(wearer)
     EndIf
     If !displayEnabled && !applyEnabled
+        StorageUtil.UnsetStringValue(wearer, "SNT_AppliedTattoos")
         LogStatus("Display and Apply disabled; idle")
     EndIf
     If _catalog && (displayEnabled || applyEnabled)
@@ -156,10 +158,13 @@ Function RefreshTattoos(Actor akWearer, Bool abDisplay)
     Int positions = JValue.retain(JArray.object())
     Int contents = JValue.retain(JArray.object())
     Bool nude = akWearer.GetWornForm(Armor.GetMaskForSlot(32)) == None
+    ; Read by other mods: "|" followed by "|section/name|" per applied tattoo.
+    String applied = "|"
     While index < JArray.count(snapshot)
         Int tattoo = JArray.getObj(snapshot, index)
         String section = JMap.getStr(tattoo, "section")
         String tattooName = JMap.getStr(tattoo, "name")
+        applied += "|" + section + "/" + tattooName + "|"
         String identity = SNT_Storage.VisibilityKey(section, tattooName)
         JMap.setObj(current, identity, tattoo)
         Int enriched = JMap.getObj(_catalog, identity)
@@ -203,6 +208,7 @@ Function RefreshTattoos(Actor akWearer, Bool abDisplay)
     EndIf
     _applied = JValue.release(_applied)
     _applied = current
+    StorageUtil.SetStringValue(akWearer, "SNT_AppliedTattoos", applied)
     JValue.release(snapshot)
     If _summary != summary
         StorageUtil.SetIntValue(akWearer, "SNT_Ready", 0)
