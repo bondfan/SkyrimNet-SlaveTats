@@ -16,6 +16,9 @@ String _status
 Int _categories
 String _summary
 String _choices
+; Applied tattoos the candidates were built for. Candidates and free slots change only with them.
+String _candidatesFor
+Bool _uiReady
 
 ; Logs a state once per load, and again when it changes.
 Function LogStatus(String asStatus)
@@ -38,6 +41,7 @@ Function Initialize()
     _blocked = False
     _status = ""
     _reloadCatalog = True
+    _uiReady = False
     StorageUtil.SetIntValue(Game.GetPlayer(), "SNT_Ready", 0)
     StorageUtil.SetIntValue(None, "SNT_ApplyReady", 0)
     RegisterForModEvent("SkyrimNet_OnPluginConfigSaved", "OnSettingsSaved")
@@ -50,6 +54,7 @@ Function Initialize()
 EndFunction
 
 Event OnSettingsSaved(String eventName, String strArg, Float numArg, Form sender)
+    _uiReady = False
     RequestRefresh()
 EndEvent
 
@@ -101,7 +106,9 @@ Event OnUpdate()
             Return
         EndIf
     EndIf
-    SetupUI()
+    If !_uiReady
+        SetupUI()
+    EndIf
     If _reloadCatalog
         StorageUtil.UnsetStringValue(wearer, "SNT_VisibleTattoos")
         StorageUtil.UnsetStringValue(wearer, "SNT_AvailableTattoos")
@@ -113,6 +120,7 @@ Event OnUpdate()
         _applied = JValue.release(_applied)
         _sources = JValue.release(_sources)
         _candidates = JValue.release(_candidates)
+        _candidatesFor = ""
         StorageUtil.SetIntValue(None, "SNT_ApplyReady", 0)
         _catalog = SNT_Catalog.Load()
         _categories = JValue.release(_categories)
@@ -198,13 +206,15 @@ Function RefreshTattoos(Actor akWearer, Bool abDisplay)
         JValue.release(previousKeys)
     Else
         String[] savedKeys = StorageUtil.debug_AllObjIntKeys(akWearer)
+        Int currentKeys = JValue.retain(JMap.allKeys(current))
         index = 0
         While index < savedKeys.Length
-            If StringUtil.Substring(savedKeys[index], 0, 15) == "SNT_Visibility:" && !ContainsIdentity(current, savedKeys[index])
+            If StringUtil.Substring(savedKeys[index], 0, 15) == "SNT_Visibility:" && !ContainsIdentity(currentKeys, savedKeys[index])
                 StorageUtil.UnsetIntValue(akWearer, savedKeys[index])
             EndIf
             index += 1
         EndWhile
+        JValue.release(currentKeys)
     EndIf
     _applied = JValue.release(_applied)
     _applied = current
@@ -346,11 +356,21 @@ Function PublishChoices(Actor akWearer, Int aiCategories, Int aiPairs)
 EndFunction
 
 Function RefreshCandidates(Actor akWearer, Bool abEnabled)
-    StorageUtil.SetIntValue(None, "SNT_ApplyReady", 0)
     If !abEnabled || !_applied
+        StorageUtil.SetIntValue(None, "SNT_ApplyReady", 0)
+        _candidatesFor = ""
         ClearChoices(akWearer)
         Return
     EndIf
+    String applied = StorageUtil.GetStringValue(akWearer, "SNT_AppliedTattoos")
+    If _candidates && _candidatesFor == applied
+        ; Restores readiness after a failed application.
+        If _choices != "" && !_applying
+            StorageUtil.SetIntValue(None, "SNT_ApplyReady", 1)
+        EndIf
+        Return
+    EndIf
+    StorageUtil.SetIntValue(None, "SNT_ApplyReady", 0)
     If !_sources
         Int available = SNT_SlaveTats.AvailableSnapshot()
         If !available
@@ -431,6 +451,7 @@ Function RefreshCandidates(Actor akWearer, Bool abEnabled)
     EndIf
     JValue.release(categories)
     JValue.release(pairs)
+    _candidatesFor = applied
     If choices != "" && !_applying
         StorageUtil.SetIntValue(None, "SNT_ApplyReady", 1)
     EndIf
@@ -472,6 +493,7 @@ Function SetupUI()
     If _hotkey > 0
         RegisterForKey(_hotkey)
     EndIf
+    _uiReady = True
 EndFunction
 
 ; The dashboard stores VK codes; SKSE consumes DirectInput scan codes.
@@ -627,14 +649,14 @@ Function UpdateUI()
     JValue.release(uiState)
 EndFunction
 
-Bool Function ContainsIdentity(Int aiMap, String asIdentity)
-    Int identities = JValue.retain(JMap.allKeys(aiMap))
+; Papyrus == ignores case; StorageUtil may return keys in a different case than JMap holds.
+Bool Function ContainsIdentity(Int aiIdentities, String asIdentity)
     Int index = 0
-    Bool found = False
-    While index < JArray.count(identities) && !found
-        found = JArray.getStr(identities, index) == asIdentity
+    While index < JArray.count(aiIdentities)
+        If JArray.getStr(aiIdentities, index) == asIdentity
+            Return True
+        EndIf
         index += 1
     EndWhile
-    JValue.release(identities)
-    Return found
+    Return False
 EndFunction
