@@ -43,6 +43,6 @@ Inspect the Papyrus log for `[SNT] Enrichment entries=7` and `[SNT] Installed en
 
 ## Credits
 
-Magic Tattoos Framework inspired the enrichment and prepared-summary approach. No MTF implementation code was copied.
+[Magic Tattoos Framework](https://github.com/levchimik/magic-tattoos-framework/) inspired the enrichment and prepared-summary approach. No MTF implementation code was copied.
 
 [Pack format](docs/enrichment-packs.md) · [Design](.agents/plans/skyrimnet-slavetats.md) · [Implementation](.agents/plans/skyrimnet-slavetats-implementation.md)
