@@ -4,6 +4,8 @@ Scope: `Data/Source/Scripts/*.psc`, SkyrimNet action/prompts.
 
 ## Performance
 
+Items 1–4 fixed in 1be74f7; not runtime-checked. Item 4 keeps the case-insensitive scan, hoisting the key list out of the loop.
+
 1. **Candidate rebuild every refresh.** `RefreshCandidates` (SNT_Main.psc:348) iterates all enriched installed sources each refresh. Result depends only on the applied set. Skip when the `applied` string is unchanged.
 2. **Every equip change triggers a full refresh.** `SNT_PlayerAlias.OnObjectEquipped/Unequipped` fire for weapons, spells, ammo, and items other mods swap. Each schedules a full refresh 0.5 s later. Only body slot 32 (nude) affects output. Filter to `Armor` and refresh display only; candidates do not depend on equipment.
 3. **`SetupUI` runs every refresh.** `RegisterMod`, `FindView`, two `RegisterListener`, `BindHotkey`, `RegisterForKey`, `GetConfigInt` every 15 s. Run once per load and on settings saved.
