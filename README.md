@@ -1,6 +1,6 @@
 # SkyrimNet - SlaveTats
 
-Development build 0.1.0. Feature code compiles; gameplay and performance verification remain pending.
+Development build 0.1.1. Feature code compiles; gameplay and performance verification remain pending.
 
 ## Requirements
 
