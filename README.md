@@ -28,9 +28,18 @@ Assign the visibility hotkey with Set Key under SkyrimNet Settings > Plugins > S
 
 The included metadata pack maps seven SlaveTats basic slave marks on the face, hands, and pubic area. Source identities were checked against the installed basic catalog; appearance and application remain unverified in-game. No tattoo textures are redistributed.
 
-The current refresh interval is a provisional 15 seconds; equipment changes request a deferred refresh. Performance measurements remain pending.
+The current refresh interval is a provisional 15 seconds; body-armor changes request a deferred refresh. Performance measurements remain pending.
 
 Inspect the Papyrus log for `[SNT] Enrichment entries=7` and `[SNT] Installed enriched tattoo sources=7`. Test checkbox persistence, dressing/undressing, independent feature toggles, and a subsequent dialogue prompt. Application and stripping need separate gameplay checks.
+
+## Potential Issues
+
+- A refresh requested while another runs waits up to 15 seconds.
+- Tattoo application gives up if a refresh runs longer than 5 seconds.
+- Category/position pairs ignore SlaveTats requirement and exclusion rules; a pair whose tattoos all fail them is still offered, and applying it fails.
+- One invalid or duplicate pack entry disables all packs. The packs are then reread every 15 seconds, logging the error each time.
+- Saved visibility choices are lost if SlaveTatsNG reports no applied tattoos on the first refresh after loading.
+- A pack position in different letter case, such as `face`, reads setting `visibility.face` instead of `visibility.Face`.
 
 ## Credits
 
